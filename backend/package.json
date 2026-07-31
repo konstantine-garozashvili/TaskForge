@@ -1,0 +1,24 @@
+{
+  "name": "taskforge-backend",
+  "version": "1.0.0",
+  "description": "TaskForge backend API - Express (helpdesk tickets MVP ForgeWorks)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "build": "echo 'No build step required for this backend' && exit 0"
+  },
+  "keywords": [
+    "helpdesk",
+    "tickets",
+    "express"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0"
+  }
+}
