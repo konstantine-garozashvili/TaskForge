@@ -1,0 +1,28 @@
+#root {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.home h1 {
+  font-size: 3rem;
+  margin-bottom: 0.25rem;
+}
+
+.home .status {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+}
+
+.home .success {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.home .error {
+  color: #cf222e;
+  font-weight: 600;
+}
