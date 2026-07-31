@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskForge — Conception Base de Données (MCD / MLD) — PostgreSQL</title>
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #5b6472;
+    --line: #d8dde5;
+    --bg: #f6f8fb;
+    --entity: #1d76db;
+    --entity-light: #e8f1fc;
+    --relation: #e07b00;
+    --relation-light: #fdf1e0;
+    --pk: #b02a37;
+    --fk: #6f42c1;
+    --code-bg: #0d1420;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    line-height: 1.55;
+  }
+  .page { max-width: 1080px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  header.doc {
+    border-bottom: 4px solid var(--entity);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+  header.doc h1 { margin: 0 0 6px; font-size: 1.9rem; }
+  header.doc .meta { color: var(--muted); font-size: .92rem; }
+  header.doc .meta span { margin-right: 18px; }
+
+  h2 {
+    font-size: 1.35rem;
+    margin: 44px 0 14px;
+    padding: 8px 14px;
+    background: #fff;
+    border-left: 5px solid var(--entity);
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  h3 { font-size: 1.08rem; margin: 26px 0 10px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 14px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93rem; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #eef2f7; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  td code, p code, li code {
+    background: #eef1f5; padding: 1px 6px; border-radius: 4px;
+    font-family: ui-monospace, Consolas, monospace; font-size: .86em;
+  }
+
+  .pk { color: var(--pk); font-weight: 700; }
+  .fk { color: var(--fk); font-weight: 700; }
+  .tag {
+    display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .4px;
+    padding: 2px 9px; border-radius: 20px; vertical-align: middle;
+  }
+  .tag.s1 { background: #fde8e8; color: #b02a37; }
+  .tag.s2 { background: #fff4d6; color: #8a6100; }
+  .tag.bonus { background: #e6f4ea; color: #1a7f37; }
+
+  pre.sql {
+    background: var(--code-bg); color: #d7e3f4;
+    padding: 20px 22px; border-radius: 10px; overflow-x: auto;
+    font-family: ui-monospace, Consolas, monospace; font-size: .84rem; line-height: 1.6;
+  }
+  pre.sql .c { color: #7d8ba1; }
+  pre.sql .k { color: #7cc7ff; font-weight: 600; }
+
+  .note {
+    background: #fff8e6; border: 1px solid #f0dfa8; border-radius: 8px;
+    padding: 12px 16px; font-size: .9rem; margin: 12px 0;
+  }
+  .note::before { content: "💡 "; }
+
+  figure { margin: 18px 0; text-align: center; }
+  figure svg { max-width: 100%; height: auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+  figcaption { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
+  .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); margin: 10px 0 0; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+
+  ul.rules li { margin-bottom: 6px; }
+  .mono { font-family: ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="doc">
+  <h1>🔥 TaskForge — Conception de la Base de Données</h1>
+  <div class="meta">
+    <span><strong>Projet :</strong> MVP helpdesk — hackathon ForgeWorks</span>
+    <span><strong>SGBD :</strong> PostgreSQL 16+</span>
+    <span><strong>Version :</strong> 1.0</span>
+    <span><strong>Date :</strong> 31/07/2026</span>
+    <span><strong>Auteur :</strong> Konstantine (DevOps/Auth)</span>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<h2>1. Contexte &amp; sources</h2>
+<div class="card">
+  <p>
+    Ce document formalise la structure de la base de données <strong>avant le développement</strong>
+    des modules Auth (#1, #2, #3) et Tickets (#6, #7). Il suit la méthode <strong>Merise</strong> :
+    règles de gestion → dictionnaire des données → <strong>MCD</strong> (Modèle Conceptuel de Données)
+    → <strong>MLD</strong> (Modèle Logique de Données) → script DDL PostgreSQL.
+  </p>
+  <p>Exigences du cahier des charges prises en compte :</p>
+  <ul>
+    <li><strong>§1 Tickets</strong> — titre, description, priorité (basse/moyenne/haute/critique), statut (ouvert/en cours/résolu/fermé), date de création, date de résolution.</li>
+    <li><strong>§2 Assignation</strong> — assigner / réassigner un ticket à un technicien.</li>
+    <li><strong>§3 Filtrage &amp; tri</strong> — par statut, priorité, technicien ; recherche textuelle titre + description.</li>
+    <li><strong>§4 Rôles</strong> — utilisateur standard, technicien, admin (RBAC).</li>
+    <li><strong>§5 Dashboard</strong> — temps moyen de résolution, répartition par priorité/statut.</li>
+    <li><strong>Bonus #11</strong> — commentaires sur les tickets (auteur, timestamp, contenu).</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Règles de gestion</h2>
+<div class="card">
+  <ul class="rules">
+    <li><strong>RG1</strong> — Un <strong>utilisateur</strong> possède <u>un et un seul rôle</u> (standard, technicien ou admin). Un rôle peut être attribué à <u>plusieurs utilisateurs</u>.</li>
+    <li><strong>RG2</strong> — Un <strong>ticket</strong> est créé par <u>un et un seul utilisateur</u>. Un utilisateur peut créer <u>zéro ou plusieurs tickets</u>.</li>
+    <li><strong>RG3</strong> — Un ticket peut être assigné à <u>au plus un technicien</u> à la fois (assignation optionnelle à la création). Un technicien peut avoir <u>zéro ou plusieurs tickets</u> assignés.</li>
+    <li><strong>RG4</strong> — La <strong>réassignation</strong> remplace l'assigné courant (l'historique complet est une extension — voir §8).</li>
+    <li><strong>RG5</strong> — Un ticket passe par les statuts : <span class="mono">ouvert → en_cours → resolu → ferme</span>. La date de résolution (<code>resolved_at</code>) n'est renseignée qu'au passage en <code>resolu</code>.</li>
+    <li><strong>RG6</strong> — Un <strong>commentaire</strong> est écrit par <u>un et un seul utilisateur</u> et concerne <u>un et un seul ticket</u> (bonus #11).</li>
+    <li><strong>RG7</strong> — L'<strong>email</strong> d'un utilisateur est unique ; le mot de passe est stocké <u>uniquement sous forme de hash</u> (bcrypt) — jamais en clair.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>3. Dictionnaire des données</h2>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Donnée</th><th>Type (concept)</th><th>Contraintes</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>user_id</code></td><td>Entier auto</td><td>PK</td><td>Identifiant unique de l'utilisateur</td></tr>
+      <tr><td><code>user_name</code></td><td>Texte (100)</td><td>NOT NULL</td><td>Nom affiché de l'utilisateur</td></tr>
+      <tr><td><code>email</code></td><td>Texte (255)</td><td>UNIQUE, NOT NULL</td><td>Identifiant de connexion (login)</td></tr>
+      <tr><td><code>password_hash</code></td><td>Texte (255)</td><td>NOT NULL</td><td>Hash bcrypt du mot de passe</td></tr>
+      <tr><td><code>role_id</code></td><td>Entier auto</td><td>PK</td><td>Identifiant du rôle</td></tr>
+      <tr><td><code>role_name</code></td><td>Texte (50)</td><td>UNIQUE, NOT NULL</td><td><code>admin</code> | <code>technicien</code> | <code>utilisateur</code></td></tr>
+      <tr><td><code>ticket_id</code></td><td>Entier auto</td><td>PK</td><td>Identifiant unique du ticket</td></tr>
+      <tr><td><code>title</code></td><td>Texte (200)</td><td>NOT NULL</td><td>Titre du ticket (recherche textuelle)</td></tr>
+      <tr><td><code>description</code></td><td>Texte long</td><td>NOT NULL</td><td>Description détaillée de l'incident</td></tr>
+      <tr><td><code>priority</code></td><td>Énumération</td><td>CHECK</td><td><code>basse</code> | <code>moyenne</code> | <code>haute</code> | <code>critique</code></td></tr>
+      <tr><td><code>status</code></td><td>Énumération</td><td>CHECK, défaut <code>ouvert</code></td><td><code>ouvert</code> | <code>en_cours</code> | <code>resolu</code> | <code>ferme</code></td></tr>
+      <tr><td><code>creator_id</code></td><td>Entier</td><td>FK → users, NOT NULL</td><td>Créateur du ticket (RG2)</td></tr>
+      <tr><td><code>assignee_id</code></td><td>Entier</td><td>FK → users, NULLABLE</td><td>Technicien assigné (RG3)</td></tr>
+      <tr><td><code>created_at</code></td><td>Timestamp TZ</td><td>défaut now()</td><td>Date de création</td></tr>
+      <tr><td><code>resolved_at</code></td><td>Timestamp TZ</td><td>NULLABLE</td><td>Date de résolution → base du temps moyen (§5)</td></tr>
+      <tr><td><code>updated_at</code></td><td>Timestamp TZ</td><td>trigger</td><td>Dernière modification</td></tr>
+      <tr><td><code>comment_id</code></td><td>Entier auto</td><td>PK</td><td>Identifiant du commentaire (bonus)</td></tr>
+      <tr><td><code>content</code></td><td>Texte long</td><td>NOT NULL</td><td>Contenu du commentaire</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>4. MCD — Modèle Conceptuel de Données</h2>
+<div class="card">
+  <figure>
+    <svg viewBox="0 0 820 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MCD TaskForge">
+      <defs>
+        <style>
+          .ent { fill: #e8f1fc; stroke: #1d76db; stroke-width: 1.6; }
+          .ent-head { fill: #1d76db; }
+          .ent-title { fill: #fff; font: 700 13px system-ui; }
+          .attr { fill: #1f2430; font: 11.5px ui-monospace, monospace; }
+          .rel { fill: #fdf1e0; stroke: #e07b00; stroke-width: 1.6; }
+          .rel-txt { fill: #b35f00; font: 700 12px system-ui; font-style: italic; }
+          .card-txt { fill: #b02a37; font: 700 11px system-ui; }
+          .lnk { stroke: #5b6472; stroke-width: 1.3; }
+        </style>
+      </defs>
+
+      <!-- ===== Entité UTILISATEUR ===== -->
+      <g>
+        <rect class="ent" x="30" y="240" width="215" height="158" rx="4"/>
+        <rect class="ent-head" x="30" y="240" width="215" height="26" rx="4"/>
+        <text class="ent-title" x="137" y="257" text-anchor="middle">UTILISATEUR</text>
+        <text class="attr" x="40" y="284"><tspan fill="#b02a37" font-weight="700">id</tspan>  SERIAL  (PK)</text>
+        <text class="attr" x="40" y="304">name  VARCHAR(100)</text>
+        <text class="attr" x="40" y="324">email  VARCHAR(255) UQ</text>
+        <text class="attr" x="40" y="344">password_hash  VARCHAR(255)</text>
+        <text class="attr" x="40" y="364">created_at  TIMESTAMPTZ</text>
+        <text class="attr" x="40" y="384"><tspan fill="#6f42c1" font-weight="700">role_id</tspan>  INTEGER  (FK)</text>
+      </g>
+
+      <!-- ===== Entité ROLE ===== -->
+      <g>
+        <rect class="ent" x="575" y="50" width="215" height="98" rx="4"/>
+        <rect class="ent-head" x="575" y="50" width="215" height="26" rx="4"/>
+        <text class="ent-title" x="682" y="67" text-anchor="middle">ROLE</text>
+        <text class="attr" x="585" y="94"><tspan fill="#b02a37" font-weight="700">id</tspan>  SERIAL  (PK)</text>
+        <text class="attr" x="585" y="114">name  VARCHAR(50) UQ</text>
+        <text class="attr" x="585" y="134">description  TEXT</text>
+      </g>
+
+      <!-- ===== Entité TICKET ===== -->
+      <g>
+        <rect class="ent" x="575" y="235" width="215" height="198" rx="4"/>
+        <rect class="ent-head" x="575" y="235" width="215" height="26" rx="4"/>
+        <text class="ent-title" x="682" y="252" text-anchor="middle">TICKET</text>
+        <text class="attr" x="585" y="279"><tspan fill="#b02a37" font-weight="700">id</tspan>  SERIAL  (PK)</text>
+        <text class="attr" x="585" y="299">title  VARCHAR(200)</text>
+        <text class="attr" x="585" y="319">description  TEXT</text>
+        <text class="attr" x="585" y="339">priority  ENUM</text>
+        <text class="attr" x="585" y="359">status  ENUM</text>
+        <text class="attr" x="585" y="379">created_at  TIMESTAMPTZ</text>
+        <text class="attr" x="585" y="399">resolved_at  TIMESTAMPTZ NULL</text>
+        <text class="attr" x="585" y="419"><tspan fill="#6f42c1" font-weight="700">creator_id, assignee_id</tspan>  (FK)</text>
+      </g>
+
+      <!-- ===== Entité COMMENTAIRE ===== -->
+      <g>
+        <rect class="ent" x="575" y="520" width="215" height="98" rx="4"/>
+        <rect class="ent-head" x="575" y="520" width="215" height="26" rx="4"/>
+        <text class="ent-title" x="682" y="537" text-anchor="middle">COMMENTAIRE</text>
+        <text class="attr" x="585" y="564"><tspan fill="#b02a37" font-weight="700">id</tspan>  SERIAL  (PK)</text>
+        <text class="attr" x="585" y="584">content  TEXT</text>
+        <text class="attr" x="585" y="604">created_at  TIMESTAMPTZ</text>
+      </g>
+
+      <!-- ===== Relation "possède" (UTILISATEUR — ROLE) ===== -->
+      <line class="lnk" x1="137" y1="240" x2="370" y2="105"/>
+      <text class="card-txt" x="195" y="165">(1,1)</text>
+      <ellipse class="rel" cx="455" cy="99" rx="85" ry="24"/>
+      <text class="rel-txt" x="455" y="103" text-anchor="middle">possède</text>
+      <line class="lnk" x1="540" y1="99" x2="575" y2="99"/>
+      <text class="card-txt" x="546" y="86">(0,n)</text>
+
+      <!-- ===== Relation "crée" (UTILISATEUR — TICKET) ===== -->
+      <line class="lnk" x1="245" y1="285" x2="330" y2="282"/>
+      <text class="card-txt" x="260" y="272">(0,n)</text>
+      <ellipse class="rel" cx="415" cy="281" rx="85" ry="24"/>
+      <text class="rel-txt" x="415" y="285" text-anchor="middle">crée</text>
+      <line class="lnk" x1="500" y1="281" x2="575" y2="281"/>
+      <text class="card-txt" x="520" y="268">(1,1)</text>
+
+      <!-- ===== Relation "assigné à" (UTILISATEUR — TICKET) ===== -->
+      <line class="lnk" x1="245" y1="340" x2="330" y2="358"/>
+      <text class="card-txt" x="262" y="342">(0,n)</text>
+      <ellipse class="rel" cx="415" cy="361" rx="85" ry="24"/>
+      <text class="rel-txt" x="415" y="365" text-anchor="middle">est assigné à</text>
+      <line class="lnk" x1="500" y1="361" x2="575" y2="361"/>
+      <text class="card-txt" x="520" y="350">(0,1)</text>
+
+      <!-- ===== Relation "écrit" (UTILISATEUR — COMMENTAIRE) ===== -->
+      <line class="lnk" x1="245" y1="392" x2="340" y2="455"/>
+      <text class="card-txt" x="272" y="420">(0,n)</text>
+      <ellipse class="rel" cx="425" cy="470" rx="85" ry="24"/>
+      <text class="rel-txt" x="425" y="474" text-anchor="middle">écrit</text>
+      <line class="lnk" x1="510" y1="475" x2="600" y2="520"/>
+      <text class="card-txt" x="545" y="482">(1,1)</text>
+
+      <!-- ===== Relation "concerne" (TICKET — COMMENTAIRE) ===== -->
+      <line class="lnk" x1="682" y1="433" x2="682" y2="452"/>
+      <text class="card-txt" x="694" y="448">(0,n)</text>
+      <ellipse class="rel" cx="682" cy="476" rx="85" ry="24"/>
+      <text class="rel-txt" x="682" y="480" text-anchor="middle">concerne</text>
+      <line class="lnk" x1="682" y1="500" x2="682" y2="520"/>
+      <text class="card-txt" x="694" y="514">(1,1)</text>
+    </svg>
+    <figcaption>Figure 1 — MCD TaskForge (notation Merise, cardinalités min/max)</figcaption>
+  </figure>
+
+  <div class="legend">
+    <span><i style="background:#1d76db"></i>Entité</span>
+    <span><i style="background:#e07b00"></i>Relation</span>
+    <span><i style="background:#b02a37"></i>Cardinalité (min,max)</span>
+    <span><strong class="pk">PK</strong> = clé primaire &nbsp; <strong class="fk">FK</strong> = clé étrangère</span>
+  </div>
+
+  <h3>Lecture des cardinalités</h3>
+  <table>
+    <thead><tr><th>Relation</th><th>Côté UTILISATEUR</th><th>Côté autre entité</th><th>Signification</th></tr></thead>
+    <tbody>
+      <tr><td><em>possède</em></td><td>(1,1)</td><td>(0,n) côté ROLE</td><td>Un utilisateur a exactement 1 rôle ; un rôle peut concerner 0 à n utilisateurs.</td></tr>
+      <tr><td><em>crée</em></td><td>(0,n)</td><td>(1,1) côté TICKET</td><td>Un utilisateur peut créer 0 à n tickets ; un ticket a exactement 1 créateur.</td></tr>
+      <tr><td><em>est assigné à</em></td><td>(0,n)</td><td>(0,1) côté TICKET</td><td>Un technicien peut avoir 0 à n tickets ; un ticket a au plus 1 assigné (optionnel).</td></tr>
+      <tr><td><em>écrit</em></td><td>(0,n)</td><td>(1,1) côté COMMENTAIRE</td><td>Un utilisateur peut écrire 0 à n commentaires ; un commentaire a 1 seul auteur.</td></tr>
+      <tr><td><em>concerne</em></td><td colspan="2">(0,n) côté TICKET / (1,1) côté COMMENTAIRE</td><td>Un ticket peut avoir 0 à n commentaires ; un commentaire concerne 1 seul ticket.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>5. MLD — Modèle Logique de Données (relationnel)</h2>
+<div class="card">
+  <p>Passage au relationnel : chaque entité devient une table ; les relations (x,1)/(1,1) se traduisent par des clés étrangères.</p>
+
+  <h3>5.1 Schéma textuel</h3>
+  <p class="mono">
+    <strong>roles</strong> (<span class="pk">id</span>, name, description, created_at)<br>
+    <strong>users</strong> (<span class="pk">id</span>, name, email, password_hash, created_at, updated_at, <span class="fk">#role_id → roles.id</span>)<br>
+    <strong>tickets</strong> (<span class="pk">id</span>, title, description, priority, status, created_at, resolved_at, updated_at, <span class="fk">#creator_id → users.id</span>, <span class="fk">#assignee_id → users.id</span>)<br>
+    <strong>comments</strong> (<span class="pk">id</span>, content, created_at, <span class="fk">#ticket_id → tickets.id</span>, <span class="fk">#author_id → users.id</span>)
+  </p>
+
+  <h3>5.2 Détail des tables PostgreSQL</h3>
+  <table>
+    <thead><tr><th>Table</th><th>Colonne</th><th>Type PostgreSQL</th><th>Contraintes</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="4"><code>roles</code></td><td><span class="pk">id</span></td><td>SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td>name</td><td>VARCHAR(50)</td><td>UNIQUE NOT NULL</td></tr>
+      <tr><td>description</td><td>TEXT</td><td>—</td></tr>
+      <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td></tr>
+
+      <tr><td rowspan="7"><code>users</code></td><td><span class="pk">id</span></td><td>SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>NOT NULL</td></tr>
+      <tr><td>email</td><td>VARCHAR(255)</td><td>UNIQUE NOT NULL</td></tr>
+      <tr><td>password_hash</td><td>VARCHAR(255)</td><td>NOT NULL (bcrypt, jamais en clair)</td></tr>
+      <tr><td><span class="fk">role_id</span></td><td>INTEGER</td><td>NOT NULL REFERENCES roles(id)</td></tr>
+      <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td></tr>
+      <tr><td>updated_at</td><td>TIMESTAMPTZ</td><td>maj par trigger</td></tr>
+
+      <tr><td rowspan="10"><code>tickets</code></td><td><span class="pk">id</span></td><td>SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td>title</td><td>VARCHAR(200)</td><td>NOT NULL</td></tr>
+      <tr><td>description</td><td>TEXT</td><td>NOT NULL</td></tr>
+      <tr><td>priority</td><td>VARCHAR(10)</td><td>NOT NULL CHECK IN ('basse','moyenne','haute','critique')</td></tr>
+      <tr><td>status</td><td>VARCHAR(15)</td><td>NOT NULL DEFAULT 'ouvert' CHECK IN ('ouvert','en_cours','resolu','ferme')</td></tr>
+      <tr><td><span class="fk">creator_id</span></td><td>INTEGER</td><td>NOT NULL REFERENCES users(id)</td></tr>
+      <tr><td><span class="fk">assignee_id</span></td><td>INTEGER</td><td>NULL REFERENCES users(id) ON DELETE SET NULL</td></tr>
+      <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td></tr>
+      <tr><td>resolved_at</td><td>TIMESTAMPTZ</td><td>NULL (rempli au statut 'resolu')</td></tr>
+      <tr><td>updated_at</td><td>TIMESTAMPTZ</td><td>maj par trigger</td></tr>
+
+      <tr><td rowspan="5"><code>comments</code> <span class="tag bonus">BONUS #11</span></td><td><span class="pk">id</span></td><td>SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td><span class="fk">ticket_id</span></td><td>INTEGER</td><td>NOT NULL REFERENCES tickets(id) ON DELETE CASCADE</td></tr>
+      <tr><td><span class="fk">author_id</span></td><td>INTEGER</td><td>NOT NULL REFERENCES users(id)</td></tr>
+      <tr><td>content</td><td>TEXT</td><td>NOT NULL</td></tr>
+      <tr><td>created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Choix de conception :</strong> les rôles sont une <strong>table</strong> (et pas un enum) pour supporter le RBAC (#2) et l'ajout futur de permissions sans migration. En revanche <code>priority</code> et <code>status</code> sont des <code>VARCHAR + CHECK</code> (listes figées par le cahier des charges) — plus simples qu'un type ENUM PostgreSQL, qui est difficile à faire évoluer.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>6. Script DDL PostgreSQL</h2>
+<div class="card">
+  <p>Script de création complet (base des futures migrations — ticket #1 / setup BDD) :</p>
+  <pre class="sql"><span class="c">-- ============================================================
+-- TaskForge — Schéma PostgreSQL (v1.0)
+-- Ordre de création : roles → users → tickets → comments
+-- ============================================================</span>
+
+<span class="k">CREATE TABLE</span> roles (
+  id          SERIAL       <span class="k">PRIMARY KEY</span>,
+  name        VARCHAR(50)  <span class="k">NOT NULL UNIQUE</span>,
+  description TEXT,
+  created_at  TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="c">-- Rôles imposés par le cahier des charges (§4)</span>
+<span class="k">INSERT INTO</span> roles (name, description) <span class="k">VALUES</span>
+  ('utilisateur', 'Crée des tickets et suit leur avancement'),
+  ('technicien',  'Résout les tickets qui lui sont assignés'),
+  ('admin',       'Gère tout : utilisateurs, tickets, configuration');
+
+<span class="k">CREATE TABLE</span> users (
+  id            SERIAL       <span class="k">PRIMARY KEY</span>,
+  name          VARCHAR(100) <span class="k">NOT NULL</span>,
+  email         VARCHAR(255) <span class="k">NOT NULL UNIQUE</span>,
+  password_hash VARCHAR(255) <span class="k">NOT NULL</span>,  <span class="c">-- bcrypt, jamais en clair (RG7)</span>
+  role_id       INTEGER      <span class="k">NOT NULL REFERENCES</span> roles(id),
+  created_at    TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now(),
+  updated_at    TIMESTAMPTZ
+);
+
+<span class="k">CREATE TABLE</span> tickets (
+  id          SERIAL       <span class="k">PRIMARY KEY</span>,
+  title       VARCHAR(200) <span class="k">NOT NULL</span>,
+  description TEXT         <span class="k">NOT NULL</span>,
+  priority    VARCHAR(10)  <span class="k">NOT NULL CHECK</span> (priority <span class="k">IN</span>
+                ('basse', 'moyenne', 'haute', 'critique')),
+  status      VARCHAR(15)  <span class="k">NOT NULL DEFAULT</span> 'ouvert' <span class="k">CHECK</span> (status <span class="k">IN</span>
+                ('ouvert', 'en_cours', 'resolu', 'ferme')),
+  creator_id  INTEGER      <span class="k">NOT NULL REFERENCES</span> users(id),
+  assignee_id INTEGER      <span class="k">REFERENCES</span> users(id) <span class="k">ON DELETE SET NULL</span>,
+  created_at  TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now(),
+  resolved_at TIMESTAMPTZ,  <span class="c">-- renseigné au passage en 'resolu' (RG5)</span>
+  updated_at  TIMESTAMPTZ
+);
+
+<span class="k">CREATE TABLE</span> comments (  <span class="c">-- Bonus #11</span>
+  id         SERIAL      <span class="k">PRIMARY KEY</span>,
+  ticket_id  INTEGER     <span class="k">NOT NULL REFERENCES</span> tickets(id) <span class="k">ON DELETE CASCADE</span>,
+  author_id  INTEGER     <span class="k">NOT NULL REFERENCES</span> users(id),
+  content    TEXT        <span class="k">NOT NULL</span>,
+  created_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="c">-- ============ INDEX (filtrage / tri / recherche — §3 du CDC) ============</span>
+<span class="k">CREATE INDEX</span> idx_tickets_status    <span class="k">ON</span> tickets (status);
+<span class="k">CREATE INDEX</span> idx_tickets_priority  <span class="k">ON</span> tickets (priority);
+<span class="k">CREATE INDEX</span> idx_tickets_assignee  <span class="k">ON</span> tickets (assignee_id);
+<span class="k">CREATE INDEX</span> idx_tickets_created   <span class="k">ON</span> tickets (created_at <span class="k">DESC</span>);
+<span class="k">CREATE INDEX</span> idx_comments_ticket   <span class="k">ON</span> comments (ticket_id);
+
+<span class="c">-- Recherche textuelle titre + description (§3) : trigrammes</span>
+<span class="k">CREATE EXTENSION IF NOT EXISTS</span> pg_trgm;
+<span class="k">CREATE INDEX</span> idx_tickets_search <span class="k">ON</span> tickets
+  <span class="k">USING</span> gin ((title || ' ' || description) gin_trgm_ops);
+
+<span class="c">-- ============ TRIGGER updated_at ============</span>
+<span class="k">CREATE OR REPLACE FUNCTION</span> set_updated_at() <span class="k">RETURNS TRIGGER AS</span> $$
+<span class="k">BEGIN</span>
+  NEW.updated_at := now();
+  <span class="k">RETURN</span> NEW;
+<span class="k">END</span>;
+$$ <span class="k">LANGUAGE</span> plpgsql;
+
+<span class="k">CREATE TRIGGER</span> trg_users_updated   <span class="k">BEFORE UPDATE ON</span> users
+  <span class="k">FOR EACH ROW EXECUTE FUNCTION</span> set_updated_at();
+<span class="k">CREATE TRIGGER</span> trg_tickets_updated <span class="k">BEFORE UPDATE ON</span> tickets
+  <span class="k">FOR EACH ROW EXECUTE FUNCTION</span> set_updated_at();</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2>7. Requêtes clés (dashboard — §5 du CDC)</h2>
+<div class="card">
+  <pre class="sql"><span class="c">-- Temps moyen de résolution (ticket #11)</span>
+<span class="k">SELECT AVG</span>(resolved_at - created_at) <span class="k">AS</span> temps_moyen_resolution
+<span class="k">FROM</span> tickets
+<span class="k">WHERE</span> resolved_at <span class="k">IS NOT NULL</span>;
+
+<span class="c">-- Répartition par statut / priorité</span>
+<span class="k">SELECT</span> status,   <span class="k">COUNT</span>(*) <span class="k">FROM</span> tickets <span class="k">GROUP BY</span> status;
+<span class="k">SELECT</span> priority, <span class="k">COUNT</span>(*) <span class="k">FROM</span> tickets <span class="k">GROUP BY</span> priority;</pre>
+  <div class="note">
+    <strong>RG5</strong> — la validation des transitions de statut (<code>ouvert → en_cours → resolu</code>) sera testée unitairement (§7 du CDC). Le CHECK contraint les <em>valeurs</em> ; la <em>séquence</em> des transitions sera garantie par la couche service backend.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>8. Extensions futures (hors MVP)</h2>
+<div class="card">
+  <table>
+    <thead><tr><th>Besoin</th><th>Évolution du schéma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Historique des réassignations (audit — RG4)</td>
+        <td>Nouvelle table <code>ticket_assignments</code> (<span class="pk">id</span>, <span class="fk">#ticket_id</span>, <span class="fk">#from_user_id</span>, <span class="fk">#to_user_id</span>, <span class="fk">#changed_by</span>, changed_at)</td>
+      </tr>
+      <tr>
+        <td>Notifications temps réel (bonus #10)</td>
+        <td>Table <code>notifications</code> (<span class="pk">id</span>, <span class="fk">#user_id</span>, type, payload JSONB, read_at, created_at)</td>
+      </tr>
+      <tr>
+        <td>Exports / rapports hebdo (bonus #12)</td>
+        <td>Aucun changement de schéma — requêtes d'agrégation sur <code>tickets</code></td>
+      </tr>
+      <tr>
+        <td>RBAC fin (permissions par action)</td>
+        <td>Tables <code>permissions</code> + <code>role_permissions</code> (N-N) si besoin au-delà des 3 rôles</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2>9. Correspondance avec les tickets GitHub</h2>
+<div class="card">
+  <table>
+    <thead><tr><th>Ticket</th><th>Tables concernées</th><th>Sprint</th></tr></thead>
+    <tbody>
+      <tr><td>#1 Auth JWT (Login/Register)</td><td><code>users</code>, <code>roles</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>#2 Gestion des rôles (RBAC)</td><td><code>roles</code>, <code>users.role_id</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>#3 CRUD Utilisateurs (Admin)</td><td><code>users</code>, <code>roles</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>#6 CRUD Ticket</td><td><code>tickets</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>#7 Assignation &amp; Réassignation</td><td><code>tickets.assignee_id</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>#8 Statut, Recherche, Filtres, Tri</td><td><code>tickets</code> + index §6</td><td><span class="tag s2">SPRINT 2</span></td></tr>
+      <tr><td>#11 Statistiques &amp; temps moyen</td><td><code>tickets.resolved_at</code></td><td><span class="tag s1">SPRINT 1</span></td></tr>
+      <tr><td>Bonus #11 Commentaires</td><td><code>comments</code></td><td><span class="tag bonus">BONUS</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p style="color:var(--muted); font-size:.82rem; text-align:center; margin-top:50px;">
+  TaskForge — documentation/database-mcd-mld.html — Merise MCD/MLD — PostgreSQL — v1.0 (31/07/2026)
+</p>
+
+</div>
+</body>
+</html>
