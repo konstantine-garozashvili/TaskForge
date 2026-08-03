@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskForge — Base de données</title>
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #5b6472;
+    --line: #dde2e9;
+    --bg: #f7f8fa;
+    --blue: #1d76db;
+    --blue-light: #e8f1fc;
+    --orange: #d97706;
+    --orange-light: #fdf3e3;
+    --pk: #b02a37;
+    --fk: #6f42c1;
+    --code-bg: #0f1622;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    line-height: 1.55;
+  }
+  .page { max-width: 1060px; margin: 0 auto; padding: 44px 28px 70px; }
+
+  header { border-bottom: 3px solid var(--blue); padding-bottom: 16px; margin-bottom: 36px; }
+  header h1 { margin: 0 0 4px; font-size: 1.75rem; }
+  header p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  h2 { font-size: 1.25rem; margin: 48px 0 6px; }
+  h2 .step {
+    display: inline-block; background: var(--blue); color: #fff;
+    font-size: .8rem; font-weight: 700; border-radius: 6px;
+    padding: 3px 10px; margin-right: 10px; vertical-align: 2px;
+  }
+  .sub { color: var(--muted); font-size: .92rem; margin: 0 0 14px; }
+
+  figure { margin: 10px 0; }
+  figure svg {
+    width: 100%; height: auto; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  figcaption { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+
+  ul.rules { padding-left: 20px; }
+  ul.rules li { margin-bottom: 5px; }
+
+  pre.sql {
+    background: var(--code-bg); color: #d7e3f4;
+    padding: 18px 20px; border-radius: 10px; overflow-x: auto;
+    font-family: ui-monospace, Consolas, monospace; font-size: .82rem; line-height: 1.6;
+  }
+  pre.sql .c { color: #7d8ba1; }
+  pre.sql .k { color: #7cc7ff; }
+
+  footer { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>TaskForge — Base de données</h1>
+  <p>MCD · MLD · MPD — méthode Merise — PostgreSQL — v3, 31/07/2026</p>
+</header>
+
+<p>
+  Ce document décrit la base de données de TaskForge, l'application de gestion de tickets
+  du hackathon ForgeWorks. Il suit les trois niveaux de la méthode Merise : le MCD présente
+  les données métier, le MLD les organise en relations, le MPD les implémente dans PostgreSQL.
+</p>
+
+<h2>Règles de gestion</h2>
+<ul class="rules">
+  <li><strong>RG1</strong> — Un utilisateur a un seul rôle (utilisateur, technicien ou admin). Un rôle peut concerner plusieurs utilisateurs.</li>
+  <li><strong>RG2</strong> — Un ticket est créé par un seul utilisateur. Un utilisateur peut créer plusieurs tickets.</li>
+  <li><strong>RG3</strong> — Un ticket est assigné à au plus un technicien. Un technicien peut traiter plusieurs tickets.</li>
+  <li><strong>RG4</strong> — Un ticket suit le cycle : ouvert → en cours → résolu → fermé. La date de résolution est renseignée au passage en « résolu ».</li>
+  <li><strong>RG5</strong> — Un commentaire a un seul auteur et concerne un seul ticket.</li>
+  <li><strong>RG6</strong> — L'email d'un utilisateur est unique. Son mot de passe est stocké hashé, jamais en clair.</li>
+</ul>
+
+<!-- ================= MCD ================= -->
+<h2><span class="step">MCD</span>Modèle conceptuel</h2>
+<p class="sub">Les données vues par le métier : propriétés en clair, identifiants soulignés, cardinalités (min,max) sur les deux pattes.</p>
+
+<figure>
+<svg viewBox="0 0 860 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MCD TaskForge">
+  <style>
+    .ent { fill: #e8f1fc; stroke: #1d76db; stroke-width: 1.6; }
+    .ent-head { fill: #1d76db; }
+    .ent-title { fill: #fff; font: 700 13.5px system-ui; }
+    .attr { fill: #1f2430; font: 13px system-ui; }
+    .ident { fill: #1f2430; font: 700 13px system-ui; text-decoration: underline; }
+    .rel { fill: #fdf3e3; stroke: #d97706; stroke-width: 1.6; }
+    .rel-txt { fill: #b35f00; font: 700 13px system-ui; font-style: italic; }
+    .card-txt { fill: #b02a37; font: 700 12px system-ui; }
+    .lnk { stroke: #5b6472; stroke-width: 1.3; }
+  </style>
+
+  <rect class="ent" x="30" y="250" width="230" height="150" rx="4"/>
+  <rect class="ent-head" x="30" y="250" width="230" height="26" rx="4"/>
+  <text class="ent-title" x="145" y="267" text-anchor="middle">UTILISATEUR</text>
+  <text class="ident" x="42" y="295">numéro d'utilisateur</text>
+  <text class="attr" x="42" y="317">nom complet</text>
+  <text class="attr" x="42" y="339">adresse email</text>
+  <text class="attr" x="42" y="361">mot de passe</text>
+  <text class="attr" x="42" y="383">date d'inscription</text>
+
+  <rect class="ent" x="610" y="60" width="220" height="106" rx="4"/>
+  <rect class="ent-head" x="610" y="60" width="220" height="26" rx="4"/>
+  <text class="ent-title" x="720" y="77" text-anchor="middle">ROLE</text>
+  <text class="ident" x="622" y="105">code du rôle</text>
+  <text class="attr" x="622" y="127">nom du rôle</text>
+  <text class="attr" x="622" y="149">description du rôle</text>
+
+  <rect class="ent" x="610" y="240" width="220" height="194" rx="4"/>
+  <rect class="ent-head" x="610" y="240" width="220" height="26" rx="4"/>
+  <text class="ent-title" x="720" y="257" text-anchor="middle">TICKET</text>
+  <text class="ident" x="622" y="285">numéro de ticket</text>
+  <text class="attr" x="622" y="307">titre</text>
+  <text class="attr" x="622" y="329">description</text>
+  <text class="attr" x="622" y="351">priorité</text>
+  <text class="attr" x="622" y="373">statut</text>
+  <text class="attr" x="622" y="395">date de création</text>
+  <text class="attr" x="622" y="417">date de résolution</text>
+
+  <rect class="ent" x="610" y="560" width="220" height="106" rx="4"/>
+  <rect class="ent-head" x="610" y="560" width="220" height="26" rx="4"/>
+  <text class="ent-title" x="720" y="577" text-anchor="middle">COMMENTAIRE</text>
+  <text class="ident" x="622" y="605">numéro de commentaire</text>
+  <text class="attr" x="622" y="627">contenu</text>
+  <text class="attr" x="622" y="649">date de publication</text>
+
+  <!-- posséder : UTILISATEUR 1,1 — 0,n ROLE -->
+  <line class="lnk" x1="145" y1="250" x2="370" y2="120"/>
+  <text class="card-txt" x="180" y="172">1,1</text>
+  <ellipse class="rel" cx="450" cy="113" rx="80" ry="24"/>
+  <text class="rel-txt" x="450" y="117" text-anchor="middle">posséder</text>
+  <line class="lnk" x1="530" y1="113" x2="610" y2="113"/>
+  <text class="card-txt" x="556" y="101">0,n</text>
+
+  <!-- créer : UTILISATEUR 0,n — 1,1 TICKET -->
+  <line class="lnk" x1="260" y1="290" x2="345" y2="290"/>
+  <text class="card-txt" x="288" y="279">0,n</text>
+  <ellipse class="rel" cx="430" cy="290" rx="80" ry="24"/>
+  <text class="rel-txt" x="430" y="294" text-anchor="middle">créer</text>
+  <line class="lnk" x1="510" y1="290" x2="610" y2="290"/>
+  <text class="card-txt" x="540" y="279">1,1</text>
+
+  <!-- être assigné à : UTILISATEUR 0,n — 0,1 TICKET -->
+  <line class="lnk" x1="260" y1="355" x2="345" y2="370"/>
+  <text class="card-txt" x="285" y="352">0,n</text>
+  <ellipse class="rel" cx="430" cy="372" rx="80" ry="24"/>
+  <text class="rel-txt" x="430" y="376" text-anchor="middle">être assigné à</text>
+  <line class="lnk" x1="510" y1="372" x2="610" y2="372"/>
+  <text class="card-txt" x="540" y="361">0,1</text>
+
+  <!-- écrire : UTILISATEUR 0,n — 1,1 COMMENTAIRE -->
+  <line class="lnk" x1="230" y1="400" x2="355" y2="490"/>
+  <text class="card-txt" x="255" y="440">0,n</text>
+  <ellipse class="rel" cx="435" cy="510" rx="80" ry="24"/>
+  <text class="rel-txt" x="435" y="514" text-anchor="middle">écrire</text>
+  <line class="lnk" x1="515" y1="516" x2="630" y2="560"/>
+  <text class="card-txt" x="565" y="518">1,1</text>
+
+  <!-- concerner : TICKET 0,n — 1,1 COMMENTAIRE -->
+  <line class="lnk" x1="720" y1="434" x2="720" y2="470"/>
+  <text class="card-txt" x="733" y="458">0,n</text>
+  <ellipse class="rel" cx="720" cy="497" rx="80" ry="24"/>
+  <text class="rel-txt" x="720" y="501" text-anchor="middle">concerner</text>
+  <line class="lnk" x1="720" y1="521" x2="720" y2="560"/>
+  <text class="card-txt" x="733" y="546">1,1</text>
+</svg>
+<figcaption>Lecture : un utilisateur possède 1,1 rôle — un rôle est possédé par 0,n utilisateurs. Un ticket est créé par 1,1 utilisateur et assigné à 0,1 technicien.</figcaption>
+</figure>
+
+<!-- ================= MLD ================= -->
+<h2><span class="step">MLD</span>Modèle logique</h2>
+<p class="sub">Traduction en relations : clés primaires soulignées, clés étrangères préfixées #, indépendant du SGBD.</p>
+
+<figure>
+<svg viewBox="0 0 860 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MLD TaskForge">
+  <style>
+    .ent2 { fill: #ffffff; stroke: #1d76db; stroke-width: 1.6; }
+    .ent2-head { fill: #1d76db; }
+    .ent2-title { fill: #fff; font: 700 13px system-ui; }
+    .row2 { fill: #1f2430; font: 12.5px system-ui; }
+    .pk2 { fill: #b02a37; font: 700 12.5px system-ui; text-decoration: underline; }
+    .fk2 { fill: #6f42c1; font: 700 12.5px system-ui; }
+    .lnk2 { stroke: #5b6472; stroke-width: 1.3; fill: none; }
+    .crow { stroke: #5b6472; stroke-width: 1.3; }
+    .opt { fill: #fff; stroke: #5b6472; stroke-width: 1.3; }
+    .lbl { fill: #8a93a1; font: italic 11px system-ui; }
+  </style>
+
+  <!-- UTILISATEUR -->
+  <rect class="ent2" x="30" y="250" width="230" height="154" rx="4"/>
+  <rect class="ent2-head" x="30" y="250" width="230" height="26" rx="4"/>
+  <text class="ent2-title" x="145" y="267" text-anchor="middle">UTILISATEUR</text>
+  <text class="pk2" x="42" y="293">num_utilisateur</text>
+  <text class="row2" x="42" y="313">nom_complet</text>
+  <text class="row2" x="42" y="333">email</text>
+  <text class="row2" x="42" y="353">mot_de_passe</text>
+  <text class="row2" x="42" y="373">date_inscription</text>
+  <text class="fk2" x="42" y="393">#code_role</text>
+
+  <!-- ROLE -->
+  <rect class="ent2" x="610" y="60" width="230" height="94" rx="4"/>
+  <rect class="ent2-head" x="610" y="60" width="230" height="26" rx="4"/>
+  <text class="ent2-title" x="725" y="77" text-anchor="middle">ROLE</text>
+  <text class="pk2" x="622" y="103">code_role</text>
+  <text class="row2" x="622" y="123">nom_role</text>
+  <text class="row2" x="622" y="143">description_role</text>
+
+  <!-- TICKET -->
+  <rect class="ent2" x="610" y="240" width="230" height="214" rx="4"/>
+  <rect class="ent2-head" x="610" y="240" width="230" height="26" rx="4"/>
+  <text class="ent2-title" x="725" y="257" text-anchor="middle">TICKET</text>
+  <text class="pk2" x="622" y="283">num_ticket</text>
+  <text class="row2" x="622" y="303">titre</text>
+  <text class="row2" x="622" y="323">description</text>
+  <text class="row2" x="622" y="343">priorite</text>
+  <text class="row2" x="622" y="363">statut</text>
+  <text class="row2" x="622" y="383">date_creation</text>
+  <text class="row2" x="622" y="403">date_resolution</text>
+  <text class="fk2" x="622" y="423">#num_utilisateur_createur</text>
+  <text class="fk2" x="622" y="443">#num_utilisateur_assigne</text>
+
+  <!-- COMMENTAIRE -->
+  <rect class="ent2" x="610" y="560" width="230" height="134" rx="4"/>
+  <rect class="ent2-head" x="610" y="560" width="230" height="26" rx="4"/>
+  <text class="ent2-title" x="725" y="577" text-anchor="middle">COMMENTAIRE</text>
+  <text class="pk2" x="622" y="603">num_commentaire</text>
+  <text class="row2" x="622" y="623">contenu</text>
+  <text class="row2" x="622" y="643">date_publication</text>
+  <text class="fk2" x="622" y="663">#num_ticket</text>
+  <text class="fk2" x="622" y="683">#num_utilisateur_auteur</text>
+
+  <!-- ROLE 1 — N UTILISATEUR -->
+  <line class="lnk2" x1="610" y1="110" x2="145" y2="250"/>
+  <line class="crow" x1="598" y1="105" x2="603" y2="121"/>
+  <line class="crow" x1="160" y1="245" x2="145" y2="250"/>
+  <line class="crow" x1="160" y1="245" x2="142" y2="240"/>
+  <line class="crow" x1="160" y1="245" x2="148" y2="260"/>
+  <text class="lbl" x="555" y="98">1</text>
+  <text class="lbl" x="172" y="232">N</text>
+
+  <!-- UTILISATEUR 1 — N TICKET (créateur) -->
+  <line class="lnk2" x1="260" y1="300" x2="610" y2="300"/>
+  <line class="crow" x1="272" y1="292" x2="272" y2="308"/>
+  <line class="crow" x1="596" y1="300" x2="610" y2="289"/>
+  <line class="crow" x1="596" y1="300" x2="610" y2="300"/>
+  <line class="crow" x1="596" y1="300" x2="610" y2="311"/>
+  <text class="lbl" x="280" y="290">1</text>
+  <text class="lbl" x="582" y="290">N</text>
+  <text class="lbl" x="420" y="290">créateur</text>
+
+  <!-- UTILISATEUR 0,1 — 0,N TICKET (assigné) -->
+  <line class="lnk2" x1="260" y1="370" x2="610" y2="370"/>
+  <circle class="opt" cx="268" cy="370" r="3.5"/>
+  <line class="crow" x1="280" y1="362" x2="280" y2="378"/>
+  <circle class="opt" cx="586" cy="370" r="3.5"/>
+  <line class="crow" x1="598" y1="370" x2="610" y2="359"/>
+  <line class="crow" x1="598" y1="370" x2="610" y2="370"/>
+  <line class="crow" x1="598" y1="370" x2="610" y2="381"/>
+  <text class="lbl" x="420" y="360">assigné à</text>
+
+  <!-- UTILISATEUR 1 — N COMMENTAIRE (auteur) -->
+  <line class="lnk2" x1="200" y1="404" x2="660" y2="560"/>
+  <line class="crow" x1="207" y1="414" x2="212" y2="401"/>
+  <line class="crow" x1="645" y1="555" x2="660" y2="560"/>
+  <line class="crow" x1="645" y1="555" x2="657" y2="570"/>
+  <line class="crow" x1="645" y1="555" x2="663" y2="550"/>
+  <text class="lbl" x="420" y="495">auteur</text>
+
+  <!-- TICKET 1 — N COMMENTAIRE -->
+  <line class="lnk2" x1="725" y1="454" x2="725" y2="560"/>
+  <line class="crow" x1="717" y1="468" x2="733" y2="468"/>
+  <line class="crow" x1="725" y1="546" x2="714" y2="560"/>
+  <line class="crow" x1="725" y1="546" x2="725" y2="560"/>
+  <line class="crow" x1="725" y1="546" x2="736" y2="560"/>
+</svg>
+<figcaption>Patte d'oie côté N, barre côté 1, cercle quand la participation est optionnelle (un ticket peut n'avoir aucun assigné).</figcaption>
+</figure>
+
+<!-- ================= MPD ================= -->
+<h2><span class="step">MPD</span>Modèle physique — PostgreSQL</h2>
+<p class="sub">Implémentation concrète : types PostgreSQL, contraintes, index et script de création.</p>
+
+<figure>
+<svg viewBox="0 0 900 740" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MPD TaskForge PostgreSQL">
+  <style>
+    .tbl { fill: #ffffff; stroke: #2d3748; stroke-width: 1.4; }
+    .tbl-head { fill: #2d3748; }
+    .tbl-title { fill: #fff; font: 700 12.5px ui-monospace, monospace; }
+    .col { font: 11.5px ui-monospace, monospace; }
+    .cname { fill: #1f2430; }
+    .ctype { fill: #8a93a1; }
+    .cpk { fill: #b02a37; font-weight: 700; }
+    .cfk { fill: #6f42c1; font-weight: 700; }
+    .lnk3 { stroke: #5b6472; stroke-width: 1.3; fill: none; }
+    .crow3 { stroke: #5b6472; stroke-width: 1.3; }
+    .opt3 { fill: #fff; stroke: #5b6472; stroke-width: 1.3; }
+    .lbl3 { fill: #8a93a1; font: italic 11px system-ui; }
+  </style>
+
+  <!-- users -->
+  <rect class="tbl" x="30" y="250" width="250" height="162" rx="4"/>
+  <rect class="tbl-head" x="30" y="250" width="250" height="26" rx="4"/>
+  <text class="tbl-title" x="155" y="267" text-anchor="middle">users</text>
+  <text class="col" x="42" y="293"><tspan class="cpk">id</tspan><tspan class="ctype"> SERIAL · PK</tspan></text>
+  <text class="col" x="42" y="313"><tspan class="cname">name</tspan><tspan class="ctype"> VARCHAR(100)</tspan></text>
+  <text class="col" x="42" y="333"><tspan class="cname">email</tspan><tspan class="ctype"> VARCHAR(255) · UQ</tspan></text>
+  <text class="col" x="42" y="353"><tspan class="cname">password_hash</tspan><tspan class="ctype"> VARCHAR(255)</tspan></text>
+  <text class="col" x="42" y="373"><tspan class="cfk">role_id</tspan><tspan class="ctype"> INTEGER · FK</tspan></text>
+  <text class="col" x="42" y="393"><tspan class="cname">created_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+  <text class="col" x="42" y="411"><tspan class="cname">updated_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+
+  <!-- roles -->
+  <rect class="tbl" x="630" y="60" width="250" height="114" rx="4"/>
+  <rect class="tbl-head" x="630" y="60" width="250" height="26" rx="4"/>
+  <text class="tbl-title" x="755" y="77" text-anchor="middle">roles</text>
+  <text class="col" x="642" y="103"><tspan class="cpk">id</tspan><tspan class="ctype"> SERIAL · PK</tspan></text>
+  <text class="col" x="642" y="123"><tspan class="cname">name</tspan><tspan class="ctype"> VARCHAR(50) · UQ</tspan></text>
+  <text class="col" x="642" y="143"><tspan class="cname">description</tspan><tspan class="ctype"> TEXT</tspan></text>
+  <text class="col" x="642" y="163"><tspan class="cname">created_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+
+  <!-- tickets -->
+  <rect class="tbl" x="630" y="240" width="250" height="234" rx="4"/>
+  <rect class="tbl-head" x="630" y="240" width="250" height="26" rx="4"/>
+  <text class="tbl-title" x="755" y="257" text-anchor="middle">tickets</text>
+  <text class="col" x="642" y="283"><tspan class="cpk">id</tspan><tspan class="ctype"> SERIAL · PK</tspan></text>
+  <text class="col" x="642" y="303"><tspan class="cname">title</tspan><tspan class="ctype"> VARCHAR(200)</tspan></text>
+  <text class="col" x="642" y="323"><tspan class="cname">description</tspan><tspan class="ctype"> TEXT</tspan></text>
+  <text class="col" x="642" y="343"><tspan class="cname">priority</tspan><tspan class="ctype"> VARCHAR(10)</tspan></text>
+  <text class="col" x="642" y="363"><tspan class="cname">status</tspan><tspan class="ctype"> VARCHAR(15)</tspan></text>
+  <text class="col" x="642" y="383"><tspan class="cfk">creator_id</tspan><tspan class="ctype"> INTEGER · FK</tspan></text>
+  <text class="col" x="642" y="403"><tspan class="cfk">assignee_id</tspan><tspan class="ctype"> INTEGER · FK · NULL</tspan></text>
+  <text class="col" x="642" y="423"><tspan class="cname">created_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+  <text class="col" x="642" y="443"><tspan class="cname">resolved_at</tspan><tspan class="ctype"> TIMESTAMPTZ · NULL</tspan></text>
+  <text class="col" x="642" y="463"><tspan class="cname">updated_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+
+  <!-- comments -->
+  <rect class="tbl" x="630" y="560" width="250" height="134" rx="4"/>
+  <rect class="tbl-head" x="630" y="560" width="250" height="26" rx="4"/>
+  <text class="tbl-title" x="755" y="577" text-anchor="middle">comments</text>
+  <text class="col" x="642" y="603"><tspan class="cpk">id</tspan><tspan class="ctype"> SERIAL · PK</tspan></text>
+  <text class="col" x="642" y="623"><tspan class="cfk">ticket_id</tspan><tspan class="ctype"> INTEGER · FK</tspan></text>
+  <text class="col" x="642" y="643"><tspan class="cfk">author_id</tspan><tspan class="ctype"> INTEGER · FK</tspan></text>
+  <text class="col" x="642" y="663"><tspan class="cname">content</tspan><tspan class="ctype"> TEXT</tspan></text>
+  <text class="col" x="642" y="683"><tspan class="cname">created_at</tspan><tspan class="ctype"> TIMESTAMPTZ</tspan></text>
+
+  <!-- roles 1 — N users -->
+  <line class="lnk3" x1="630" y1="115" x2="145" y2="250"/>
+  <line class="crow3" x1="617" y1="110" x2="623" y2="126"/>
+  <line class="crow3" x1="161" y1="245" x2="145" y2="250"/>
+  <line class="crow3" x1="161" y1="245" x2="142" y2="240"/>
+  <line class="crow3" x1="161" y1="245" x2="148" y2="260"/>
+
+  <!-- users 1 — N tickets (créateur) -->
+  <line class="lnk3" x1="280" y1="300" x2="630" y2="300"/>
+  <line class="crow3" x1="292" y1="292" x2="292" y2="308"/>
+  <line class="crow3" x1="616" y1="300" x2="630" y2="289"/>
+  <line class="crow3" x1="616" y1="300" x2="630" y2="300"/>
+  <line class="crow3" x1="616" y1="300" x2="630" y2="311"/>
+  <text class="lbl3" x="450" y="290">créateur</text>
+
+  <!-- users 0,1 — 0,N tickets (assigné) -->
+  <line class="lnk3" x1="280" y1="375" x2="630" y2="375"/>
+  <circle class="opt3" cx="288" cy="375" r="3.5"/>
+  <line class="crow3" x1="300" y1="367" x2="300" y2="383"/>
+  <circle class="opt3" cx="606" cy="375" r="3.5"/>
+  <line class="crow3" x1="618" y1="375" x2="630" y2="364"/>
+  <line class="crow3" x1="618" y1="375" x2="630" y2="375"/>
+  <line class="crow3" x1="618" y1="375" x2="630" y2="386"/>
+  <text class="lbl3" x="450" y="365">assigné à</text>
+
+  <!-- users 1 — N comments (auteur) -->
+  <line class="lnk3" x1="210" y1="412" x2="665" y2="560"/>
+  <line class="crow3" x1="217" y1="422" x2="222" y2="409"/>
+  <line class="crow3" x1="650" y1="555" x2="665" y2="560"/>
+  <line class="crow3" x1="650" y1="555" x2="662" y2="570"/>
+  <line class="crow3" x1="650" y1="555" x2="668" y2="550"/>
+  <text class="lbl3" x="430" y="500">auteur</text>
+
+  <!-- tickets 1 — N comments -->
+  <line class="lnk3" x1="755" y1="474" x2="755" y2="560"/>
+  <line class="crow3" x1="747" y1="488" x2="763" y2="488"/>
+  <line class="crow3" x1="755" y1="546" x2="744" y2="560"/>
+  <line class="crow3" x1="755" y1="546" x2="755" y2="560"/>
+  <line class="crow3" x1="755" y1="546" x2="766" y2="560"/>
+</svg>
+<figcaption>PK en rouge, FK en violet, NULL pour les colonnes optionnelles.</figcaption>
+</figure>
+
+<h2>Script de création</h2>
+<pre class="sql"><span class="k">CREATE TABLE</span> roles (
+  id          SERIAL       <span class="k">PRIMARY KEY</span>,
+  name        VARCHAR(50)  <span class="k">NOT NULL UNIQUE</span>,
+  description TEXT,
+  created_at  TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="k">INSERT INTO</span> roles (name, description) <span class="k">VALUES</span>
+  ('utilisateur', 'Crée des tickets et suit leur avancement'),
+  ('technicien',  'Résout les tickets qui lui sont assignés'),
+  ('admin',       'Gère tout : utilisateurs, tickets, configuration');
+
+<span class="k">CREATE TABLE</span> users (
+  id            SERIAL       <span class="k">PRIMARY KEY</span>,
+  name          VARCHAR(100) <span class="k">NOT NULL</span>,
+  email         VARCHAR(255) <span class="k">NOT NULL UNIQUE</span>,
+  password_hash VARCHAR(255) <span class="k">NOT NULL</span>,
+  role_id       INTEGER      <span class="k">NOT NULL REFERENCES</span> roles(id),
+  created_at    TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now(),
+  updated_at    TIMESTAMPTZ
+);
+
+<span class="k">CREATE TABLE</span> tickets (
+  id          SERIAL       <span class="k">PRIMARY KEY</span>,
+  title       VARCHAR(200) <span class="k">NOT NULL</span>,
+  description TEXT         <span class="k">NOT NULL</span>,
+  priority    VARCHAR(10)  <span class="k">NOT NULL CHECK</span> (priority <span class="k">IN</span>
+                ('basse', 'moyenne', 'haute', 'critique')),
+  status      VARCHAR(15)  <span class="k">NOT NULL DEFAULT</span> 'ouvert' <span class="k">CHECK</span> (status <span class="k">IN</span>
+                ('ouvert', 'en_cours', 'resolu', 'ferme')),
+  creator_id  INTEGER      <span class="k">NOT NULL REFERENCES</span> users(id),
+  assignee_id INTEGER      <span class="k">REFERENCES</span> users(id) <span class="k">ON DELETE SET NULL</span>,
+  created_at  TIMESTAMPTZ  <span class="k">NOT NULL DEFAULT</span> now(),
+  resolved_at TIMESTAMPTZ,
+  updated_at  TIMESTAMPTZ
+);
+
+<span class="k">CREATE TABLE</span> comments (
+  id         SERIAL      <span class="k">PRIMARY KEY</span>,
+  ticket_id  INTEGER     <span class="k">NOT NULL REFERENCES</span> tickets(id) <span class="k">ON DELETE CASCADE</span>,
+  author_id  INTEGER     <span class="k">NOT NULL REFERENCES</span> users(id),
+  content    TEXT        <span class="k">NOT NULL</span>,
+  created_at TIMESTAMPTZ <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="c">-- Index pour les filtres, le tri et la recherche (§3 du cahier des charges)</span>
+<span class="k">CREATE INDEX</span> idx_tickets_status    <span class="k">ON</span> tickets (status);
+<span class="k">CREATE INDEX</span> idx_tickets_priority  <span class="k">ON</span> tickets (priority);
+<span class="k">CREATE INDEX</span> idx_tickets_assignee  <span class="k">ON</span> tickets (assignee_id);
+<span class="k">CREATE INDEX</span> idx_tickets_created   <span class="k">ON</span> tickets (created_at <span class="k">DESC</span>);
+<span class="k">CREATE INDEX</span> idx_comments_ticket   <span class="k">ON</span> comments (ticket_id);
+
+<span class="k">CREATE EXTENSION IF NOT EXISTS</span> pg_trgm;
+<span class="k">CREATE INDEX</span> idx_tickets_search <span class="k">ON</span> tickets
+  <span class="k">USING</span> gin ((title || ' ' || description) gin_trgm_ops);
+
+<span class="c">-- Mise à jour automatique de updated_at</span>
+<span class="k">CREATE OR REPLACE FUNCTION</span> set_updated_at() <span class="k">RETURNS TRIGGER AS</span> $$
+<span class="k">BEGIN</span>
+  NEW.updated_at := now();
+  <span class="k">RETURN</span> NEW;
+<span class="k">END</span>;
+$$ <span class="k">LANGUAGE</span> plpgsql;
+
+<span class="k">CREATE TRIGGER</span> trg_users_updated   <span class="k">BEFORE UPDATE ON</span> users
+  <span class="k">FOR EACH ROW EXECUTE FUNCTION</span> set_updated_at();
+<span class="k">CREATE TRIGGER</span> trg_tickets_updated <span class="k">BEFORE UPDATE ON</span> tickets
+  <span class="k">FOR EACH ROW EXECUTE FUNCTION</span> set_updated_at();</pre>
+
+<footer>TaskForge — documentation/database-mcd-mld.html</footer>
+
+</div>
+</body>
+</html>
