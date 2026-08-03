@@ -1,0 +1,28 @@
+# TaskForge — stack de développement
+# Lancement : docker compose up -d
+# Le schéma database/schema.sql est chargé automatiquement au 1er démarrage.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taskforge-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taskforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskforge_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-taskforge}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Schéma Merise (MPD) exécuté une seule fois au 1er démarrage
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  db_data:
