@@ -19,6 +19,9 @@ COPY package.json ./
 COPY openapi.yaml ./
 COPY src ./src
 
+# Répertoire de logs inscriptible par l'utilisateur non-root (volume partagé §6)
+RUN mkdir -p /app/logs && chown taskforge:taskforge /app/logs
+
 USER taskforge
 EXPOSE 5000
 CMD ["node", "src/server.js"]

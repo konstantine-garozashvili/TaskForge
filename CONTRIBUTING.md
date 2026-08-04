@@ -63,9 +63,20 @@ Le workflow `.github/workflows/ci.yml` s'exécute sur chaque push et PR vers `ma
 - installation des dépendances (`npm ci`)
 - lint ESLint (backend + frontend)
 - vérification du formatage Prettier
+- **tests unitaires** du backend (`npm test` — node:test, voir `backend/tests/`)
 - build (Vite pour le frontend)
 
 Une PR ne doit être mergée que si la CI est verte.
+
+### Tests unitaires (CDC §7)
+
+Suite `node --test` dans `backend/tests/` couvrant la logique métier critique :
+transitions de statut des tickets et temps moyen de résolution (`src/utils/ticketRules.js`,
+partagé avec le futur CRUD tickets), hiérarchie RBAC, middleware JWT, registre de métriques.
+
+```bash
+make test          # ou : cd backend && npm test
+```
 
 ## Base de données
 
