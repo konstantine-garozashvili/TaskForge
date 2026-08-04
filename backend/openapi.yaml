@@ -354,7 +354,7 @@ components:
         user: { $ref: '#/components/schemas/User' }
         token:
           type: string
-          description: Token JWT à envoyer en `Authorization: Bearer <token>`
+          description: "Token JWT à envoyer dans le header 'Authorization: Bearer <token>'"
           example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
 
     Error:
