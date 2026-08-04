@@ -1,0 +1,95 @@
+# TaskForge — stack de production dockerisée (CDC §8)
+#
+# Lancement :  docker compose -f docker-compose.prod.yml up -d --build --scale backend=3
+# Accès :      http://localhost (Traefik) — dashboard Traefik : http://localhost:8080
+#
+# Traefik route /api, /health, /metrics vers le backend (load balancé entre
+# les réplicas) et / vers le frontend. Aucun secret dans les images :
+# les variables sont injectées au runtime (surchargeables via .env ou shell).
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: taskforge-prod-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.dashboard=true
+      - --api.insecure=true # démo locale uniquement — jamais en prod exposée
+      - --accesslog=true
+      - --ping=true
+    environment:
+      # Docker Engine 29 exige une API >= 1.40 ; le client de Traefik v3.4 négocie trop bas
+      DOCKER_API_VERSION: "1.44"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Même origine via Traefik : le navigateur appelle /api sur le même host
+        VITE_API_URL: /api
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgres://taskforge:${POSTGRES_PASSWORD:-taskforge_prod_password}@db:5432/taskforge
+      JWT_SECRET: ${JWT_SECRET:-taskforge-prod-secret-change-me}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api`) || Path(`/health`) || Path(`/metrics`)
+      - traefik.http.services.backend.loadbalancer.server.port=5000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: taskforge-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taskforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskforge_prod_password}
+      POSTGRES_DB: taskforge
+    volumes:
+      - db_prod_data:/var/lib/postgresql/data
+      # Schéma Merise (MPD) exécuté une seule fois au 1er démarrage
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskforge -d taskforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_prod_data:
