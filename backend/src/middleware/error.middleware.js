@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js';
+
 /**
  * Central error handling middleware.
  * Any error thrown/passed with next(err) ends up here.
@@ -8,7 +10,12 @@ export const errorHandler = (err, req, res, next) => {
   const message = status === 500 ? 'Internal Server Error' : err.message;
 
   if (status === 500) {
-    console.error(err);
+    logger.error('unhandled_error', {
+      request_id: req.id ?? null,
+      user_id: req.user?.id ?? null,
+      error: err.message,
+      stack: err.stack,
+    });
   }
 
   res.status(status).json({ error: message });
