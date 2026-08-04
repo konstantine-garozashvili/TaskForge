@@ -58,13 +58,13 @@ Le serveur de dev Vite proxifie automatiquement les appels `/api` vers le backen
 
 ### Scripts disponibles
 
-| Projet   | Commande        | Description                        |
-| -------- | --------------- | ---------------------------------- |
-| backend  | `npm run dev`   | Serveur dev avec watch             |
-| backend  | `npm start`     | Démarrage production               |
-| backend  | `npm run build` | (aucun build requis)               |
-| frontend | `npm run dev`   | Serveur de dev Vite (port 5173)    |
-| frontend | `npm run build` | Build de production dans `dist/`   |
+| Projet   | Commande          | Description                      |
+| -------- | ----------------- | -------------------------------- |
+| backend  | `npm run dev`     | Serveur dev avec watch           |
+| backend  | `npm start`       | Démarrage production             |
+| backend  | `npm run build`   | (aucun build requis)             |
+| frontend | `npm run dev`     | Serveur de dev Vite (port 5173)  |
+| frontend | `npm run build`   | Build de production dans `dist/` |
 | frontend | `npm run preview` | Prévisualisation du build        |
 
 ## 🗺️ Roadmap (Sprints)
@@ -73,3 +73,32 @@ Le serveur de dev Vite proxifie automatiquement les appels `/api` vers le backen
 - **Sprint 2 (08 Aug - 14 Aug)** : Filtres/recherche/tri, stats dashboard, tests, CI/CD, Docker prod, documentation, soutenance.
 
 Voir les [issues](https://github.com/konstantine-garozashvili/TaskForge/issues) et le [Sprint Board](https://github.com/users/konstantine-garozashvili/projects/20) pour le détail.
+
+## 🌐 Déploiement
+
+| Composant | Plateforme | URL                                                      |
+| --------- | ---------- | -------------------------------------------------------- |
+| Frontend  | Vercel     | https://taskforge-technicert1.vercel.app                 |
+| Backend   | Railway    | https://backend-production-d4bd5.up.railway.app          |
+| API Docs  | Railway    | https://backend-production-d4bd5.up.railway.app/api-docs |
+
+### Frontend (Vercel)
+
+Le workflow `.github/workflows/cd.yml` déploie le frontend en production à chaque tag `v*` poussé sur le dépôt :
+
+```bash
+git tag -a v0.x.y -m "message"
+git push origin v0.x.y
+```
+
+L'URL de l'API est injectée au build via la variable `VITE_API_URL` (configurée dans le projet Vercel).
+
+### Backend (Railway)
+
+Le service `backend` du projet Railway `taskforge` est connecté au dépôt GitHub (branche `main`, root directory `backend/`) : chaque push sur `main` redéploie l'API automatiquement. La base PostgreSQL managée vit dans le même projet ; le schéma `database/schema.sql` y a été appliqué.
+
+Variables d'environnement du backend en production : `DATABASE_URL` (référence automatique), `JWT_SECRET`, `CLIENT_URL` (origine autorisée par CORS), `NODE_ENV=production`.
+
+### Compte de démonstration
+
+- Email : `kost@taskforge.dev` — rôle `admin` (local et production)
