@@ -43,6 +43,47 @@ paths:
                   version: { type: string, example: '1.0.0' }
                   timestamp: { type: string, format: date-time }
 
+  /health:
+    get:
+      tags: [Général]
+      summary: État de santé des composants
+      description: |
+        Vérifie chaque composant : API up, base de données connectée.
+        Retourne 200 si tout est up, 503 si un composant est down.
+      responses:
+        '200':
+          description: Tous les composants sont opérationnels
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Un composant est défaillant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+  /metrics:
+    get:
+      tags: [Général]
+      summary: Métriques applicatives (format Prometheus)
+      description: |
+        Exposition texte format Prometheus : tickets créés,
+        temps moyen de réponse API, utilisateurs connectés,
+        compteurs de requêtes HTTP.
+      responses:
+        '200':
+          description: Métriques au format texte Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  taskforge_tickets_created_total 12
+                  taskforge_http_requests_total 340
+                  taskforge_http_request_duration_ms_avg 4.21
+                  taskforge_connected_users 2
+                  taskforge_uptime_seconds 3600
+
   /api/auth/register:
     post:
       tags: [Auth]
@@ -361,3 +402,18 @@ components:
       type: object
       properties:
         error: { type: string, example: 'Invalid credentials' }
+
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+          example: ok
+        uptime_seconds: { type: integer, example: 3600 }
+        checks:
+          type: object
+          properties:
+            api: { type: string, enum: [up], example: up }
+            database: { type: string, enum: [up, down], example: up }
+        timestamp: { type: string, format: date-time }
