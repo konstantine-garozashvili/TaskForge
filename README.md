@@ -102,3 +102,34 @@ Variables d'environnement du backend en production : `DATABASE_URL` (référence
 ### Compte de démonstration
 
 - Email : `kost@taskforge.dev` — rôle `admin` (local et production)
+
+## 🐳 Stack prod dockerisée (Traefik)
+
+Stack de production locale avec **Traefik v3.6** en reverse proxy / load balancer,
+indépendante de l'hébergement Vercel + Railway (démo jury, portabilité — CDC §8).
+
+```bash
+# Build + lancement avec 3 réplicas du backend
+docker compose -f docker-compose.prod.yml up -d --build --scale backend=3
+
+# Arrêt
+docker compose -f docker-compose.prod.yml down        # ajouter -v pour purger la BDD
+```
+
+Accès : **http://localhost** — dashboard Traefik : http://localhost:8080 (démo locale uniquement).
+
+### Routage
+
+| Chemin                        | Destination                              |
+| ----------------------------- | ---------------------------------------- |
+| `/api`, `/health`, `/metrics` | backend (round-robin entre les réplicas) |
+| `/`, `/healthz`               | frontend (nginx non-root)                |
+| `:8080`                       | dashboard Traefik                        |
+
+### Points validés
+
+- **Load balancing** : `--scale backend=N` — Traefik découvre les réplicas via le socket Docker et répartit le trafic en round-robin.
+- **Résilience** : un réplica tué ne coupe pas le service (healthchecks Docker + restart automatique).
+- **Multi-stage builds** : backend **253 Mo** vs 308 Mo naïf (-18 %) ; frontend **76 Mo** vs 425 Mo naïf (-82 %).
+- **Sécurité** : utilisateur non-root dans les deux images, tags versionnés (pas de `:latest`), `.dockerignore`, secrets injectés au runtime.
+- **Note** : Traefik **v3.6 minimum** avec Docker Engine 29 (le client Docker de v3.4 est incompatible).
