@@ -72,3 +72,33 @@ Une PR ne doit être mergée que si la CI est verte.
 Le schéma (`database/schema.sql`, issu du MPD Merise — voir `documentation/`) est chargé
 automatiquement au premier démarrage de `docker compose up -d`. Pour repartir d'une base
 vide : `docker compose down -v && docker compose up -d`.
+
+## Release (déploiement)
+
+Les deux plateformes ont des déclencheurs différents — à connaître avant de release :
+
+| Composant         | Déclencheur            | Source déployée             |
+| ----------------- | ---------------------- | --------------------------- |
+| Frontend (Vercel) | push d'un **tag `v*`** | le commit pointé par le tag |
+| Backend (Railway) | **push sur `main`**    | la branche `main` (auto)    |
+
+### Procédure de release
+
+```bash
+# 1. Merger develop dans main → Railway redéploie le backend immédiatement
+git checkout main && git pull
+git merge develop && git push origin main
+
+# 2. Taguer le HEAD de main → la CD déploie le frontend sur Vercel
+git tag -a v0.x.y -m "message de release"
+git push origin v0.x.y
+```
+
+### Règles
+
+- **Toujours taguer depuis `main`**, juste après le merge — jamais depuis `develop`.
+  Le workflow CD build le commit tagué, quelle que soit la branche : un tag sur
+  `develop` déploierait du code non validé en production.
+- Tagger le HEAD de `main` garantit que frontend et backend livrent le même code.
+- Vérifier que le run CD est vert (`gh run list --workflow=cd.yml`) puis que
+  https://taskforge-technicert1.vercel.app répond avant d'annoncer la release.
