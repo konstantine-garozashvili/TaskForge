@@ -7,7 +7,11 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "build": "echo 'No build step required for this backend' && exit 0"
+    "build": "echo 'No build step required for this backend' && exit 0",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "helpdesk",
@@ -20,5 +24,12 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6"
   }
 }
