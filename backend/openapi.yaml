@@ -1,0 +1,363 @@
+openapi: 3.0.3
+info:
+  title: TaskForge API
+  version: 1.0.0
+  description: |
+    API du MVP helpdesk TaskForge (hackathon ForgeWorks).
+
+    **Authentification** : la plupart des endpoints exigent un header
+    `Authorization: Bearer <token>` obtenu via `POST /api/auth/login`
+    ou `POST /api/auth/register`.
+
+    **Rôles** (hiérarchie) : `admin` > `technicien` > `utilisateur`.
+  contact:
+    name: Équipe TaskForge
+servers:
+  - url: http://localhost:5000
+    description: Développement local
+tags:
+  - name: Général
+    description: Informations sur l'API
+  - name: Auth
+    description: Authentification JWT
+  - name: Rôles
+    description: Gestion des rôles (admin)
+  - name: Utilisateurs
+    description: CRUD utilisateurs (admin)
+
+paths:
+  /api:
+    get:
+      tags: [Général]
+      summary: Informations sur l'API
+      description: Endpoint de test de connexion frontend ↔ backend.
+      responses:
+        '200':
+          description: L'API répond
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: 'TaskForge API is running 🚀' }
+                  version: { type: string, example: '1.0.0' }
+                  timestamp: { type: string, format: date-time }
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Créer un compte
+      description: |
+        Crée un utilisateur avec le rôle par défaut `utilisateur`.
+        Le mot de passe est hashé en bcrypt (jamais stocké en clair).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Compte créé — retourne l'utilisateur et son token JWT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: Champ manquant, email invalide ou mot de passe < 8 caractères
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Email déjà enregistré
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter
+      description: |
+        Vérifie les identifiants et retourne un token JWT (durée : 1 jour).
+        Erreur 401 générique (pas d'énumération des utilisateurs).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Connexion réussie — utilisateur + token JWT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: Champ manquant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Profil de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profil courant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Token absent, malformé ou expiré
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Utilisateur introuvable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/roles:
+    get:
+      tags: [Rôles]
+      summary: Lister les rôles (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des rôles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items: { $ref: '#/components/schemas/Role' }
+        '401':
+          description: Token absent ou invalide
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Rôle insuffisant (admin requis)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/users:
+    get:
+      tags: [Utilisateurs]
+      summary: Lister les utilisateurs (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des utilisateurs avec leur rôle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Token absent ou invalide
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: Rôle insuffisant (admin requis)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/users/{id}:
+    get:
+      tags: [Utilisateurs]
+      summary: Détail d'un utilisateur (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Utilisateur trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Utilisateurs]
+      summary: Mettre à jour un utilisateur (admin)
+      description: |
+        Tous les champs sont optionnels. Si `password` est fourni,
+        il est re-hashé en bcrypt. Le rôle doit exister.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserRequest' }
+      responses:
+        '200':
+          description: Utilisateur mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Aucun champ, email invalide, mot de passe trop court ou rôle inconnu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Email déjà utilisé par un autre compte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      tags: [Utilisateurs]
+      summary: Supprimer un utilisateur (admin)
+      description: Un admin ne peut pas supprimer son propre compte.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: Utilisateur supprimé (pas de contenu)
+        '400':
+          description: Tentative de suppression de son propre compte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      description: Identifiant de l'utilisateur
+      schema: { type: integer, example: 2 }
+
+  responses:
+    Unauthorized:
+      description: Token absent, malformé ou expiré
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Rôle insuffisant
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Role:
+      type: object
+      properties:
+        id: { type: integer, example: 3 }
+        name:
+          type: string
+          enum: [utilisateur, technicien, admin]
+          example: admin
+        description: { type: string, example: 'Gère tout : utilisateurs, tickets, configuration' }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 2 }
+        name: { type: string, example: 'Konstantine Admin' }
+        email: { type: string, format: email, example: 'kost@taskforge.dev' }
+        role:
+          type: string
+          enum: [utilisateur, technicien, admin]
+          example: utilisateur
+        createdAt: { type: string, format: date-time }
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, example: 'Ada Lovelace' }
+        email: { type: string, format: email, example: 'ada@taskforge.dev' }
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: 'supersecret1'
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: 'kost@taskforge.dev' }
+        password: { type: string, format: password, example: 'supersecret1' }
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name: { type: string, example: 'Nouveau Nom' }
+        email: { type: string, format: email, example: 'nouveau@taskforge.dev' }
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Re-hashé en bcrypt si fourni
+        role:
+          type: string
+          enum: [utilisateur, technicien, admin]
+
+    AuthResponse:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        token:
+          type: string
+          description: "Token JWT à envoyer dans le header 'Authorization: Bearer <token>'"
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: 'Invalid credentials' }
