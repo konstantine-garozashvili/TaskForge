@@ -62,10 +62,13 @@ Le serveur de dev Vite proxifie automatiquement les appels `/api` vers le backen
 | -------- | ----------------- | -------------------------------- |
 | backend  | `npm run dev`     | Serveur dev avec watch           |
 | backend  | `npm start`       | Démarrage production             |
+| backend  | `npm test`        | Tests unitaires (node --test)    |
 | backend  | `npm run build`   | (aucun build requis)             |
 | frontend | `npm run dev`     | Serveur de dev Vite (port 5173)  |
 | frontend | `npm run build`   | Build de production dans `dist/` |
 | frontend | `npm run preview` | Prévisualisation du build        |
+
+Un `Makefile` à la racine centralise les commandes courantes : `make help`.
 
 ## 🗺️ Roadmap (Sprints)
 
@@ -131,5 +134,6 @@ Accès : **http://localhost** — dashboard Traefik : http://localhost:8080 (dé
 - **Load balancing** : `--scale backend=N` — Traefik découvre les réplicas via le socket Docker et répartit le trafic en round-robin.
 - **Résilience** : un réplica tué ne coupe pas le service (healthchecks Docker + restart automatique).
 - **Multi-stage builds** : backend **253 Mo** vs 308 Mo naïf (-18 %) ; frontend **76 Mo** vs 425 Mo naïf (-82 %).
-- **Sécurité** : utilisateur non-root dans les deux images, tags versionnés (pas de `:latest`), `.dockerignore`, secrets injectés au runtime.
+- **Sécurité** : utilisateur non-root dans les deux images, tags versionnés (pas de `:latest`), `.dockerignore`, secrets injectés au runtime (scan `docker history` : aucun secret).
+- **Logs centralisés** : les réplicas backend écrivent leurs logs JSON sur le volume partagé `logs_data` (`/app/logs/backend.log`) en plus de stdout (CDC §6).
 - **Note** : Traefik **v3.6 minimum** avec Docker Engine 29 (le client Docker de v3.4 est incompatible).

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "test": "node --test tests/*.test.js",
     "build": "echo 'No build step required for this backend' && exit 0",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
