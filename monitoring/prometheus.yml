@@ -1,0 +1,22 @@
+# Prometheus — configuration TaskForge (bonus CDC "Pour aller plus loin")
+# Scrape le backend (réplicas résolus en round-robin via le DNS Docker)
+# et Traefik lui-même pour observer le load balancer.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: taskforge-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:5000"]
+        labels:
+          app: taskforge
+
+  - job_name: traefik
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["traefik:8082"]
+        labels:
+          app: traefik
