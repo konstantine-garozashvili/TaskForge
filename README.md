@@ -85,20 +85,20 @@ Voir les [issues](https://github.com/konstantine-garozashvili/TaskForge/issues) 
 | Backend   | Railway    | https://backend-production-d4bd5.up.railway.app          |
 | API Docs  | Railway    | https://backend-production-d4bd5.up.railway.app/api-docs |
 
-### Frontend (Vercel)
+### Frontend (Vercel) & Backend (Railway)
 
-Le workflow `.github/workflows/cd.yml` déploie le frontend en production à chaque tag `v*` poussé sur le dépôt :
+Le workflow `.github/workflows/cd.yml` déploie **les deux** en production à chaque tag `v*` poussé sur le dépôt — frontend sur Vercel, backend sur Railway, depuis le même commit tagué :
 
 ```bash
 git tag -a v0.x.y -m "message"
 git push origin v0.x.y
 ```
 
-L'URL de l'API est injectée au build via la variable `VITE_API_URL` (configurée dans le projet Vercel).
+L'URL de l'API est injectée au build frontend via la variable `VITE_API_URL` (configurée dans le projet Vercel).
 
 ### Backend (Railway)
 
-Le service `backend` du projet Railway `taskforge` est connecté au dépôt GitHub (branche `main`, root directory `backend/`) : chaque push sur `main` redéploie l'API automatiquement. La base PostgreSQL managée vit dans le même projet ; le schéma `database/schema.sql` y a été appliqué.
+Le service `backend` du projet Railway `taskforge` est déployé uniquement par le workflow CD (tag `v*`) — les pushes sur `main` ne déclenchent **pas** de déploiement, pour que la production ne serve que du code versionné. La base PostgreSQL managée vit dans le même projet ; le schéma `database/schema.sql` y a été appliqué.
 
 Variables d'environnement du backend en production : `DATABASE_URL` (référence automatique), `JWT_SECRET`, `CLIENT_URL` (origines autorisées par CORS, séparées par des virgules), `NODE_ENV=production`.
 

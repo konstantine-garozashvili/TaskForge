@@ -86,21 +86,22 @@ vide : `docker compose down -v && docker compose up -d`.
 
 ## Release (déploiement)
 
-Les deux plateformes ont des déclencheurs différents — à connaître avant de release :
+Un seul déclencheur pour toute la production : le **tag `v*`**. Frontend et backend
+sont déployés ensemble, depuis le même commit tagué :
 
 | Composant         | Déclencheur            | Source déployée             |
 | ----------------- | ---------------------- | --------------------------- |
 | Frontend (Vercel) | push d'un **tag `v*`** | le commit pointé par le tag |
-| Backend (Railway) | **push sur `main`**    | la branche `main` (auto)    |
+| Backend (Railway) | push d'un **tag `v*`** | le commit pointé par le tag |
 
 ### Procédure de release
 
 ```bash
-# 1. Merger develop dans main → Railway redéploie le backend immédiatement
+# 1. Merger develop dans main
 git checkout main && git pull
 git merge develop && git push origin main
 
-# 2. Taguer le HEAD de main → la CD déploie le frontend sur Vercel
+# 2. Taguer le HEAD de main → la CD déploie frontend (Vercel) ET backend (Railway)
 git tag -a v0.x.y -m "message de release"
 git push origin v0.x.y
 ```
