@@ -53,8 +53,9 @@ jobs:
           | jq -r '.[0].id')" >> "$GITHUB_ENV"
 
       - name: Deploy backend to Railway
+        working-directory: backend
         run: >-
-          railway up .
+          railway up
           --project c40bd341-5a3a-4e2d-ae2c-4b2f5bc52402
           --environment production
           --service backend
