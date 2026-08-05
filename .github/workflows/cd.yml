@@ -52,16 +52,12 @@ jobs:
           --environment production --service backend --json
           | jq -r '.[0].id')" >> "$GITHUB_ENV"
 
-      - name: Link Railway project
-        run: >-
-          railway link
-          --project c40bd341-5a3a-4e2d-ae2c-4b2f5bc52402
-          --environment production
-          --service backend
-
       - name: Deploy backend to Railway
         run: >-
           railway up
+          --project c40bd341-5a3a-4e2d-ae2c-4b2f5bc52402
+          --environment production
+          --service backend
           --detach --ci
           --message "release ${{ github.ref_name }}"
 
