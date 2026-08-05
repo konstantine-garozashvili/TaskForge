@@ -81,7 +81,7 @@ Voir les [issues](https://github.com/konstantine-garozashvili/TaskForge/issues) 
 
 | Composant | Plateforme | URL                                                      |
 | --------- | ---------- | -------------------------------------------------------- |
-| Frontend  | Vercel     | https://taskforge-technicert1.vercel.app                 |
+| Frontend  | Vercel     | https://taskforge-helpdesk.vercel.app                    |
 | Backend   | Railway    | https://backend-production-d4bd5.up.railway.app          |
 | API Docs  | Railway    | https://backend-production-d4bd5.up.railway.app/api-docs |
 
@@ -100,7 +100,7 @@ L'URL de l'API est injectée au build via la variable `VITE_API_URL` (configuré
 
 Le service `backend` du projet Railway `taskforge` est connecté au dépôt GitHub (branche `main`, root directory `backend/`) : chaque push sur `main` redéploie l'API automatiquement. La base PostgreSQL managée vit dans le même projet ; le schéma `database/schema.sql` y a été appliqué.
 
-Variables d'environnement du backend en production : `DATABASE_URL` (référence automatique), `JWT_SECRET`, `CLIENT_URL` (origine autorisée par CORS), `NODE_ENV=production`.
+Variables d'environnement du backend en production : `DATABASE_URL` (référence automatique), `JWT_SECRET`, `CLIENT_URL` (origines autorisées par CORS, séparées par des virgules), `NODE_ENV=production`.
 
 ### Compte de démonstration
 

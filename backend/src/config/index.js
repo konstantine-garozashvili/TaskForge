@@ -9,7 +9,10 @@ dotenv.config();
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 5000,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientUrl: (process.env.CLIENT_URL || 'http://localhost:5173')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean),
   databaseUrl:
     process.env.DATABASE_URL ||
     'postgres://taskforge:taskforge_dev_password@localhost:5434/taskforge',

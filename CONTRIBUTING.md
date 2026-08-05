@@ -112,4 +112,4 @@ git push origin v0.x.y
   `develop` déploierait du code non validé en production.
 - Tagger le HEAD de `main` garantit que frontend et backend livrent le même code.
 - Vérifier que le run CD est vert (`gh run list --workflow=cd.yml`) puis que
-  https://taskforge-technicert1.vercel.app répond avant d'annoncer la release.
+  https://taskforge-helpdesk.vercel.app répond avant d'annoncer la release.
