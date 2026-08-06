@@ -22,20 +22,6 @@
   padding: 4px 8px 16px;
 }
 
-.tf-logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--tf-radius-sm);
-  background: var(--tf-blue);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 .tf-brand-name {
   font-size: 16px;
   font-weight: 600;
@@ -208,9 +194,6 @@
 }
 
 .tf-auth-loading .tf-logo-mark {
-  width: 40px;
-  height: 40px;
-  font-size: 16px;
   animation: tf-pulse 1.4s ease-in-out infinite;
 }
 
