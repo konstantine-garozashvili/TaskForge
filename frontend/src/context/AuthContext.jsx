@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { AuthContext } from './auth-context.js';
-import { clearToken, getMe, getToken, login, register, setToken } from '../services/api.js';
+import {
+  clearToken,
+  getMe,
+  getToken,
+  login,
+  register,
+  setToken,
+  updateMe,
+} from '../services/api.js';
 
 /**
  * Auth state for the whole app: current user + token lifecycle.
@@ -49,8 +57,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateProfile = async (fields) => {
+    const data = await updateMe(fields);
+    setUser(data.user);
+    return data.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

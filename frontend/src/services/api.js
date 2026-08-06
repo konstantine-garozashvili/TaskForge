@@ -58,3 +58,15 @@ export const register = (name, email, password) =>
   request('/auth/register', { method: 'POST', body: { name, email, password }, auth: false });
 
 export const getMe = () => request('/auth/me');
+
+/* ---------- Profil (ticket #4) ---------- */
+
+export const updateMe = (fields) => request('/auth/me', { method: 'PUT', body: fields });
+
+/* ---------- Gestion des utilisateurs — admin (ticket #4) ---------- */
+
+export const listUsers = () => request('/users');
+
+export const updateUser = (id, fields) => request(`/users/${id}`, { method: 'PUT', body: fields });
+
+export const deleteUser = (id) => request(`/users/${id}`, { method: 'DELETE' });

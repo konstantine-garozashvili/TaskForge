@@ -8,6 +8,7 @@ const TITLES = {
   '/tickets': 'Tickets',
   '/dashboard': 'Dashboard',
   '/utilisateurs': 'Utilisateurs',
+  '/profil': 'Profil',
 };
 
 /**
@@ -51,13 +52,20 @@ function AppShell() {
         </nav>
 
         <div className="tf-sidebar-user">
-          <div className="tf-avatar" aria-hidden="true">
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
-          <div className="tf-user-meta">
-            <span className="tf-user-name">{user?.name}</span>
-            <span className={`tf-role-badge tf-role-${user?.role}`}>{user?.role}</span>
-          </div>
+          <button
+            type="button"
+            className="tf-profile-link"
+            onClick={() => navigate('/profil')}
+            title="Voir mon profil"
+          >
+            <div className="tf-avatar" aria-hidden="true">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="tf-user-meta">
+              <span className="tf-user-name">{user?.name}</span>
+              <span className={`tf-role-badge tf-role-${user?.role}`}>{user?.role}</span>
+            </div>
+          </button>
           <button
             type="button"
             className="tf-icon-button"
