@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { LogoMark } from './Logo.jsx';
 import { IconChart, IconLogout, IconTicket, IconUsers } from './icons.jsx';
 import './AppShell.css';
 
@@ -28,7 +29,7 @@ function AppShell() {
     <div className="tf-shell">
       <aside className="tf-sidebar">
         <div className="tf-sidebar-brand">
-          <div className="tf-logo-mark">TF</div>
+          <LogoMark size={28} />
           <span className="tf-brand-name">TaskForge</span>
         </div>
 

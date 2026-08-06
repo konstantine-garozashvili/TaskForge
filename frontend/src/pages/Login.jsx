@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from '../hooks/useToast.js';
+import { LogoMark } from '../components/Logo.jsx';
 import './Auth.css';
 
 /**
@@ -41,7 +42,7 @@ function Login() {
     <main className="tf-auth-page">
       <div className="tf-auth-card">
         <div className="tf-auth-brand">
-          <div className="tf-logo-mark">TF</div>
+          <LogoMark size={36} />
           <h1 className="tf-auth-title">TaskForge</h1>
           <p className="tf-auth-subtitle">Helpdesk interne — ForgeWorks</p>
         </div>

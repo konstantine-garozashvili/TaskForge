@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { LogoMark } from './Logo.jsx';
 
 /**
  * Gate de routes privées (ticket #5).
@@ -13,7 +14,7 @@ function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="tf-auth-loading">
-        <div className="tf-logo-mark">TF</div>
+        <LogoMark size={40} />
         <p>Vérification de la session…</p>
       </div>
     );

@@ -43,19 +43,11 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Marque — pastille TF partagée (sidebar, auth, chargement) */
+/* Marque — pastille ticket + coche, partagée (sidebar, auth, chargement) */
 .tf-logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--tf-radius-sm);
-  background: var(--tf-blue);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
 }
 
 button {
