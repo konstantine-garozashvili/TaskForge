@@ -1,5 +1,6 @@
-# Prometheus — variante VPS (pas de Traefik sur le VPS : Nginx hôte).
-# Scrape uniquement le backend TaskForge.
+# Prometheus — variante VPS.
+# 1. Métriques réelles du backend TaskForge (/metrics)
+# 2. Sondes blackbox (uptime/latence) pour TOUS les projets du VPS
 
 global:
   scrape_interval: 15s
@@ -12,3 +13,22 @@ scrape_configs:
       - targets: ["backend:5000"]
         labels:
           app: taskforge
+
+  # Sondes HTTP externes — ajouter un projet = ajouter une URL ici
+  - job_name: vps-sites
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://konstantine.fr
+          - https://konstantine.fr/api/health
+          - https://taskforge.konstantine.fr
+          - https://taskforge.konstantine.fr/api
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

@@ -1,0 +1,9 @@
+# Blackbox exporter — sondes HTTP pour tous les projets du VPS
+modules:
+  http_2xx:
+    prober: http
+    timeout: 8s
+    http:
+      valid_status_codes: [] # défaut = 2xx
+      follow_redirects: true
+      preferred_ip_protocol: ip4

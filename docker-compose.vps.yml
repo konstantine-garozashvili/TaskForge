@@ -88,6 +88,16 @@ services:
       timeout: 3s
       retries: 5
 
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    container_name: taskforge-vps-blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    # Pas de port publié : joint uniquement par Prometheus (réseau interne)
+
   grafana:
     image: grafana/grafana:12.0.2
     container_name: taskforge-vps-grafana
