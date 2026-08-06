@@ -62,4 +62,7 @@ temp/
 *.local
 .vercel
 .netlify
+.agents/
+.claude/
+.windsurf/
 __pycache__/
