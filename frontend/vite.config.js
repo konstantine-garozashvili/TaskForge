@@ -7,9 +7,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Proxy API calls to the Express backend (http://localhost:5000)
+      // Par défaut : stack Docker locale via Traefik (http://localhost, port 80) —
+      // toujours disponible, identique à la prod. Pour un backend lancé à la main
+      // (`npm run dev` sur :5000) : VITE_BACKEND_URL=http://localhost:5000 npm run dev
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost',
         changeOrigin: true,
       },
     },

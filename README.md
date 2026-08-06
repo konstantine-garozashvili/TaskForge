@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-Le serveur de dev Vite proxifie automatiquement les appels `/api` vers le backend (`http://localhost:5000`).
+Le serveur de dev Vite proxifie automatiquement les appels `/api` vers la stack Docker locale via Traefik (`http://localhost`, port 80). Pour cibler un backend lancé à la main : `VITE_BACKEND_URL=http://localhost:5000 npm run dev`.
 
 ### Scripts disponibles
 
@@ -137,3 +137,14 @@ Accès : **http://localhost** — dashboard Traefik : http://localhost:8080 (dé
 - **Sécurité** : utilisateur non-root dans les deux images, tags versionnés (pas de `:latest`), `.dockerignore`, secrets injectés au runtime (scan `docker history` : aucun secret).
 - **Logs centralisés** : les réplicas backend écrivent leurs logs JSON sur le volume partagé `logs_data` (`/app/logs/backend.log`) en plus de stdout (CDC §6).
 - **Note** : Traefik **v3.6 minimum** avec Docker Engine 29 (le client Docker de v3.4 est incompatible).
+
+### Monitoring — Prometheus + Grafana (bonus CDC)
+
+La stack prod embarque un **Prometheus** qui scrape `/metrics` du backend (tous les réplicas via le DNS Docker) et les métriques propres à Traefik, plus un **Grafana** provisionné automatiquement (datasource + dashboard « TaskForge — Observabilité » : tickets créés, utilisateurs connectés, uptime, temps de réponse, débit HTTP, trafic Traefik).
+
+| Service    | URL                   | Identifiants par défaut                 |
+| ---------- | --------------------- | --------------------------------------- |
+| Prometheus | http://localhost:9090 | —                                       |
+| Grafana    | http://localhost:3001 | `admin` / `admin` (voir `.env.example`) |
+
+Configuration : `monitoring/prometheus.yml`, provisioning Grafana dans `monitoring/grafana/`. Rétention Prometheus : 7 jours.

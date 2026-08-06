@@ -1,0 +1,158 @@
+# TaskForge — stack VPS (taskforge.konstantine.fr)
+# Chaîne : Internet → Nginx hôte (TLS, certbot) → Traefik (routage Docker +
+# load balancing + métriques) → backend/frontend.
+# Ensemble (konstantine.fr) reste géré par Nginx/PM2 — non touché.
+# Ports publiés sur 127.0.0.1 uniquement ; base avec son volume dédié.
+#
+# Déploiement : git tag v* + push → GitHub Actions (deploy-vps.yml) fait tout.
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: taskforge-vps-traefik
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entrypoint=metrics
+      - --entrypoints.metrics.address=:8082
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # Le Nginx hôte proxifie ici ; Traefik dispatche /api → backend, / → frontend
+      - "127.0.0.1:8081:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/metrics >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    container_name: taskforge-vps-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taskforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: taskforge
+    volumes:
+      - db_vps_data:/var/lib/postgresql/data
+      # Schéma Merise (MPD) exécuté une seule fois au 1er démarrage
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskforge -d taskforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Aucun port publié : joignable uniquement par le backend (réseau interne)
+
+  backend:
+    build: ./backend
+    container_name: taskforge-vps-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgres://taskforge:${POSTGRES_PASSWORD}@db:5432/taskforge
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+      CLIENT_URL: ${CLIENT_URL:-https://taskforge.konstantine.fr}
+    ports:
+      - "127.0.0.1:5001:5000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=PathPrefix(`/api`) || Path(`/health`) || Path(`/metrics`)
+      - traefik.http.services.backend.loadbalancer.server.port=5000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Même origine : le navigateur appelle /api sur taskforge.konstantine.fr,
+        # le Nginx hôte le proxifie vers le backend.
+        VITE_API_URL: /api
+    container_name: taskforge-vps-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.services.frontend.loadbalancer.server.port=8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      backend:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    container_name: taskforge-vps-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus.vps.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_vps_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    container_name: taskforge-vps-blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    # Pas de port publié : joint uniquement par Prometheus (réseau interne)
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: taskforge-vps-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD manquant dans .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_vps_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3002:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  db_vps_data:
+  prometheus_vps_data:
+  grafana_vps_data:

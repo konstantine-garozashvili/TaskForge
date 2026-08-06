@@ -24,6 +24,8 @@ tags:
     description: Gestion des rôles (admin)
   - name: Utilisateurs
     description: CRUD utilisateurs (admin)
+  - name: Dashboard
+    description: Statistiques agrégées des tickets
 
 paths:
   /api:
@@ -167,6 +169,52 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+    put:
+      tags: [Auth]
+      summary: Mettre à jour son propre profil
+      description: |
+        Modification en libre-service du nom, de l'email et/ou du mot de passe.
+        Le changement de rôle est réservé aux admins via `PUT /api/users/:id`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: Ada Lovelace }
+                email: { type: string, format: email, example: ada@forgeworks.fr }
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: nouveau-mot-de-passe
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Aucun champ à modifier ou validation échouée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Token absent, malformé ou expiré
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Email déjà utilisé par un autre compte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /api/roles:
     get:
@@ -301,6 +349,33 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /api/stats:
+    get:
+      tags: [Dashboard]
+      summary: Statistiques du dashboard
+      description: |
+        Répartition des tickets par statut et priorité, temps moyen de
+        résolution, et volume de tickets créés/résolus agrégé par période.
+        Accessible à tout utilisateur authentifié (pas de restriction de rôle).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Granularité de l'agrégation temporelle (défaut `day`)
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+      responses:
+        '200':
+          description: Statistiques agrégées
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Stats' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -402,6 +477,48 @@ components:
       type: object
       properties:
         error: { type: string, example: 'Invalid credentials' }
+
+    Stats:
+      type: object
+      properties:
+        total: { type: integer, example: 12 }
+        byStatus:
+          type: object
+          properties:
+            ouvert: { type: integer, example: 5 }
+            en_cours: { type: integer, example: 3 }
+            resolu: { type: integer, example: 3 }
+            ferme: { type: integer, example: 1 }
+        byPriority:
+          type: object
+          properties:
+            basse: { type: integer, example: 2 }
+            moyenne: { type: integer, example: 6 }
+            haute: { type: integer, example: 3 }
+            critique: { type: integer, example: 1 }
+        averageResolutionTimeMs:
+          type: number
+          description: Temps moyen de résolution en millisecondes (0 si aucun ticket résolu)
+          example: 7200000
+        period:
+          type: string
+          enum: [day, week, month]
+          example: day
+        createdByPeriod:
+          type: array
+          items: { $ref: '#/components/schemas/PeriodBucket' }
+        resolvedByPeriod:
+          type: array
+          items: { $ref: '#/components/schemas/PeriodBucket' }
+
+    PeriodBucket:
+      type: object
+      properties:
+        period:
+          type: string
+          description: "Clé de période : 'YYYY-MM-DD' (day), 'YYYY-Www' (week) ou 'YYYY-MM' (month)"
+          example: '2026-08-05'
+        count: { type: integer, example: 4 }
 
     Health:
       type: object

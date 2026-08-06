@@ -1,0 +1,389 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+/* ===== TaskForge DevOps Diaporama — animation system ===== */
+
+:root {
+  --tf-bg: #0b0d10;
+  --tf-surface: #14171c;
+  --tf-surface-2: #1b1f26;
+  --tf-border: rgba(255, 255, 255, 0.09);
+  --tf-text: rgba(255, 255, 255, 0.92);
+  --tf-text-2: rgba(255, 255, 255, 0.56);
+  --tf-text-3: rgba(255, 255, 255, 0.38);
+  --tf-blue: #1783ff;
+  --tf-green: #16c456;
+  --tf-red: #ff3849;
+  --tf-orange: #ff9500;
+  --tf-purple: #985ffb;
+}
+
+.tf-mono {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
+
+/* --- slide entrance --- */
+@keyframes tf-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.tf-enter {
+  animation: tf-enter 0.45s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.tf-enter-d1 {
+  animation-delay: 0.08s;
+}
+.tf-enter-d2 {
+  animation-delay: 0.16s;
+}
+.tf-enter-d3 {
+  animation-delay: 0.24s;
+}
+.tf-enter-d4 {
+  animation-delay: 0.32s;
+}
+
+/* --- flowing dots along a track --- */
+@keyframes tf-flow-x {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 10px);
+    opacity: 0;
+  }
+}
+.tf-dot-x {
+  position: absolute;
+  top: 50%;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  animation: tf-flow-x 2.6s linear infinite;
+}
+
+@keyframes tf-flow-y {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 10px);
+    opacity: 0;
+  }
+}
+.tf-dot-y {
+  position: absolute;
+  left: 50%;
+  margin-left: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  animation: tf-flow-y 2.2s linear infinite;
+}
+
+/* --- generic glow / pulse --- */
+@keyframes tf-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 131, 255, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 24px 4px rgba(23, 131, 255, 0.35);
+  }
+}
+.tf-glow {
+  animation: tf-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes tf-heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.18);
+  }
+  28% {
+    transform: scale(1);
+  }
+}
+.tf-heartbeat {
+  animation: tf-heartbeat 1.6s ease-in-out infinite;
+}
+
+@keyframes tf-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+.tf-blink {
+  animation: tf-blink 1.1s step-end infinite;
+}
+
+/* --- CI stepper: each step lights green in sequence --- */
+@keyframes tf-step-on {
+  0%,
+  12% {
+    background: var(--tf-surface-2);
+    border-color: var(--tf-border);
+    color: var(--tf-text-2);
+  }
+  20%,
+  88% {
+    background: rgba(22, 196, 86, 0.14);
+    border-color: rgba(22, 196, 86, 0.55);
+    color: var(--tf-green);
+  }
+  96%,
+  100% {
+    background: var(--tf-surface-2);
+    border-color: var(--tf-border);
+    color: var(--tf-text-2);
+  }
+}
+.tf-step {
+  animation: tf-step-on 6s linear infinite;
+}
+
+/* --- size bars (docker) --- */
+@keyframes tf-bar {
+  from {
+    width: var(--from);
+  }
+  to {
+    width: var(--to);
+  }
+}
+.tf-bar {
+  animation: tf-bar 1.6s cubic-bezier(0.23, 1, 0.32, 1) 0.3s both;
+}
+
+/* --- request dots targeting replicas (traefik slide) --- */
+@keyframes tf-request {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(1);
+    opacity: 0;
+  }
+}
+.tf-request {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--tf-blue);
+  box-shadow: 0 0 12px 2px rgba(23, 131, 255, 0.5);
+  animation: tf-request 1.5s cubic-bezier(0.35, 0, 0.65, 1) infinite;
+}
+
+@keyframes tf-replica-hit {
+  0%,
+  88% {
+    box-shadow: 0 0 0 0 rgba(23, 131, 255, 0);
+  }
+  94% {
+    box-shadow: 0 0 18px 3px rgba(23, 131, 255, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 131, 255, 0);
+  }
+}
+
+/* --- log stream --- */
+@keyframes tf-log-line {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+.tf-log-line {
+  animation: tf-log-line 4s ease-out infinite;
+}
+
+/* --- metric tick --- */
+@keyframes tf-tick {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  81% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  90% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* --- slow float for background ornaments --- */
+@keyframes tf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.tf-float {
+  animation: tf-float 7s ease-in-out infinite;
+}
+
+@keyframes tf-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tf-spin-slow {
+  animation: tf-spin-slow 14s linear infinite;
+}
+
+/* --- progress bar --- */
+.tf-progress {
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* --- card base --- */
+.tf-card {
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border);
+  border-radius: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-dot-x,
+  .tf-dot-y,
+  .tf-request,
+  .tf-glow,
+  .tf-heartbeat,
+  .tf-spin-slow,
+  .tf-float,
+  .tf-step,
+  .tf-log-line {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
