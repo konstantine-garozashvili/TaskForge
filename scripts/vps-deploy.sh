@@ -36,6 +36,9 @@ EOF
 
 docker compose -f docker-compose.vps.yml up -d --build
 
+# Recharge la config Prometheus sans redémarrage (lifecycle activé)
+curl -fsS -X POST http://127.0.0.1:9090/-/reload > /dev/null 2>&1 || true
+
 # Vérifications
 sleep 8
 curl -fsS http://127.0.0.1:8080/healthz > /dev/null
