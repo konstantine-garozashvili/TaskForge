@@ -62,3 +62,4 @@ temp/
 *.local
 .vercel
 .netlify
+__pycache__/
