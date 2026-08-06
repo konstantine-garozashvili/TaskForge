@@ -1,0 +1,64 @@
+name: Deploy to VPS
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag ou branche à déployer'
+        required: true
+
+jobs:
+  build-gate:
+    name: Build gate (lint, tests, builds)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Backend — lint + tests
+        working-directory: backend
+        run: |
+          npm ci
+          npx eslint src/
+          npm test
+
+      - name: Frontend — lint + build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+  deploy:
+    name: Deploy taskforge.konstantine.fr
+    needs: build-gate
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ github.event.inputs.ref || github.ref_name }}
+    steps:
+      - name: Deploy over SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H 167.235.72.190 >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/vps_key root@167.235.72.190 \
+            "POSTGRES_PASSWORD='$POSTGRES_PASSWORD' JWT_SECRET='$JWT_SECRET' bash /opt/taskforge/scripts/vps-deploy.sh '$REF'"
+
+      - name: Verify public site
+        run: |
+          sleep 5
+          curl -fsS -o /dev/null -w "frontend: %{http_code}\n" https://taskforge.konstantine.fr/
+          curl -fsS -o /dev/null -w "api: %{http_code}\n" https://taskforge.konstantine.fr/api
