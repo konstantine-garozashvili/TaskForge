@@ -10,6 +10,17 @@ export default [
   },
   js.configs.recommended,
   {
+    // Fichiers de config exécutés par Node (vite.config.js, etc.)
+    files: ['*.config.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 'latest',

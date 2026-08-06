@@ -1,9 +1,19 @@
+@import './styles/tokens.css';
+
+/* Base TaskForge — thème clair, calme, outil interne. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--tf-font);
   line-height: 1.5;
   font-weight: 400;
-  color: #213547;
-  background-color: #ffffff;
+  color: var(--tf-text-1);
+  background-color: var(--tf-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -14,25 +24,58 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  font-size: 14px;
 }
 
 h1,
-h2 {
-  color: #1a1a2e;
+h2,
+h3,
+p {
+  margin: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-  }
+a {
+  color: var(--tf-blue);
+  text-decoration: none;
+}
 
-  h1,
-  h2 {
-    color: #f3f4f6;
-  }
+a:hover {
+  text-decoration: underline;
+}
 
-  .home .status {
-    border-color: #444;
+/* Marque — pastille TF partagée (sidebar, auth, chargement) */
+.tf-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Focus visible cohérent — bleu d'accent */
+:focus-visible {
+  outline: 2px solid var(--tf-blue);
+  outline-offset: 2px;
+  border-radius: var(--tf-radius-xs);
+}
+
+/* Le mouvement se retire proprement si l'utilisateur le demande */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
