@@ -14,8 +14,7 @@ const config = {
     .map((url) => url.trim())
     .filter(Boolean),
   databaseUrl:
-    process.env.DATABASE_URL ||
-    'postgres://taskforge:taskforge_dev_password@localhost:5434/taskforge',
+    process.env.DATABASE_URL || 'postgres://taskforge:Weaver12345!3@localhost:5434/taskforge',
   jwt: {
     secret: process.env.JWT_SECRET || 'taskforge-dev-secret-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
