@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-taskforge}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskforge_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Weaver12345!3}
       POSTGRES_DB: ${POSTGRES_DB:-taskforge}
     ports:
       - "${POSTGRES_PORT:-5434}:5432"
@@ -23,6 +23,19 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+
+  # Interface web pour explorer la base (équivalent léger de Prisma Studio)
+  # Disponible sur http://localhost:${ADMINER_PORT:-8081}
+  # Connexion : système PostgreSQL, serveur "db", utilisateur/mot de passe ci-dessus.
+  adminer:
+    image: adminer:4-standalone
+    container_name: taskforge-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
 
 volumes:
   db_data:

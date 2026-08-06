@@ -1,0 +1,58 @@
+/* Page profil — cartes empilées, max 560px (ticket #4). */
+
+.tf-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.tf-profile-card {
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border-light);
+  border-radius: var(--tf-radius-lg);
+  padding: 24px;
+}
+
+.tf-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tf-avatar-large {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+.tf-profile-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tf-text-1);
+  margin-bottom: 4px;
+}
+
+.tf-profile-since {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--tf-text-3);
+}
+
+.tf-profile-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tf-text-1);
+  margin-bottom: 16px;
+}
+
+.tf-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tf-profile-actions .tf-button-primary {
+  height: 36px;
+  padding: 0 14px;
+  margin-top: 0;
+}

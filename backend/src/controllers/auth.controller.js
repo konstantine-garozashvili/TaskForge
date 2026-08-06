@@ -117,3 +117,62 @@ export const me = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * PUT /api/auth/me
+ * Body (all optional): { name, email, password }
+ * Self-service profile update — no role change allowed here (admin-only via /api/users).
+ */
+export const updateMe = async (req, res, next) => {
+  try {
+    const { name, email, password } = req.body || {};
+
+    if (email && !EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    if (password && password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    if (email) {
+      const dup = await pool.query('SELECT id FROM users WHERE email = $1 AND id <> $2', [
+        email,
+        req.user.id,
+      ]);
+      if (dup.rowCount > 0) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+    }
+
+    const updates = [];
+    const values = [];
+    if (name) {
+      values.push(name);
+      updates.push(`name = $${values.length}`);
+    }
+    if (email) {
+      values.push(email);
+      updates.push(`email = $${values.length}`);
+    }
+    if (password) {
+      values.push(await bcrypt.hash(password, config.bcryptRounds));
+      updates.push(`password_hash = $${values.length}`);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(req.user.id);
+    const { rows } = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${values.length}
+       RETURNING id, name, email, created_at,
+                 (SELECT name FROM roles WHERE id = users.role_id) AS role`,
+      values,
+    );
+
+    res.json({ user: publicUser(rows[0]) });
+  } catch (err) {
+    next(err);
+  }
+};

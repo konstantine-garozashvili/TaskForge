@@ -1,0 +1,75 @@
+.tf-toast-region {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: var(--tf-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.tf-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 260px;
+  max-width: 380px;
+  padding: 12px 16px;
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border-light);
+  border-left: 3px solid var(--tf-blue);
+  border-radius: var(--tf-radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  animation: tf-toast-in var(--tf-duration-toast) var(--tf-ease-out);
+}
+
+.tf-toast-success {
+  border-left-color: var(--tf-green);
+}
+.tf-toast-success .tf-toast-icon {
+  color: var(--tf-green);
+}
+.tf-toast-error {
+  border-left-color: var(--tf-red);
+}
+.tf-toast-error .tf-toast-icon {
+  color: var(--tf-red);
+}
+.tf-toast-info .tf-toast-icon {
+  color: var(--tf-blue);
+}
+
+.tf-toast-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.tf-toast-message {
+  font-size: 14px;
+  color: var(--tf-text-1);
+}
+
+.tf-toast-leave {
+  animation: tf-toast-out 260ms var(--tf-ease-out) forwards;
+}
+
+@keyframes tf-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tf-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

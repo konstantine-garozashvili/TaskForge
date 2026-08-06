@@ -2,6 +2,7 @@
 #
 # Lancement :  docker compose -f docker-compose.prod.yml up -d --build --scale backend=3
 # Accès :      http://localhost (Traefik) — dashboard Traefik : http://localhost:8080
+# Monitoring : Prometheus http://localhost:9090 — Grafana http://localhost:3001 (admin/admin)
 #
 # Traefik route /api, /health, /metrics vers le backend (load balancé entre
 # les réplicas) et / vers le frontend. Aucun secret dans les images :
@@ -20,6 +21,10 @@ services:
       - --api.insecure=true # démo locale uniquement — jamais en prod exposée
       - --accesslog=true
       - --ping=true
+      # Métriques Prometheus de Traefik (trafic du load balancer) — entrypoint dédié
+      - --entrypoints.metrics.address=:8082
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entrypoint=metrics
     environment:
       # Docker Engine 29 exige une API >= 1.40 ; le client de Traefik v3.4 négocie trop bas
       DOCKER_API_VERSION: "1.44"
@@ -95,6 +100,54 @@ services:
       timeout: 3s
       retries: 10
 
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    container_name: taskforge-prod-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_started
+      traefik:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: taskforge-prod-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
 volumes:
   db_prod_data:
   logs_data:
+  prometheus_data:
+  grafana_data:

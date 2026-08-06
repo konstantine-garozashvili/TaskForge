@@ -1,0 +1,64 @@
+/**
+ * TaskForge design tokens — « quiet utility ».
+ * Une seule source de vérité visuelle pour toute l'app :
+ * couleurs sémantiques, rayons, rythme d'espacement, mouvement.
+ */
+:root {
+  /* Surfaces */
+  --tf-bg: #f9fbfc;
+  --tf-surface: #ffffff;
+  --tf-sidebar: #f5f5f5;
+
+  /* Texte */
+  --tf-text-1: rgba(0, 0, 0, 0.9);
+  --tf-text-2: rgba(0, 0, 0, 0.6);
+  --tf-text-3: rgba(0, 0, 0, 0.45);
+
+  /* Bordures fines (remplacent les ombres) */
+  --tf-border: rgba(0, 0, 0, 0.13);
+  --tf-border-light: rgba(0, 0, 0, 0.07);
+
+  /* Fills discrets (hover, actif) */
+  --tf-fill-1: rgba(0, 0, 0, 0.03);
+  --tf-fill-2: rgba(0, 0, 0, 0.05);
+
+  /* Accent — uniquement actions, liens, focus */
+  --tf-blue: #1783ff;
+  --tf-blue-hover: #167ff7;
+  --tf-blue-active: #167cf2;
+  --tf-blue-soft: #e8f3ff;
+
+  /* Sémantique métier */
+  --tf-green: #16c456;
+  --tf-green-soft: rgba(22, 196, 86, 0.1);
+  --tf-orange: #ff9500;
+  --tf-orange-soft: rgba(255, 149, 0, 0.1);
+  --tf-red: #ff3849;
+  --tf-red-soft: rgba(255, 77, 77, 0.1);
+  --tf-gray-soft: rgba(0, 0, 0, 0.05);
+
+  /* Rayons — liés à la taille du composant */
+  --tf-radius-lg: 12px; /* cartes, panneaux */
+  --tf-radius-md: 10px; /* boutons, inputs */
+  --tf-radius-sm: 8px; /* petits contrôles */
+  --tf-radius-xs: 4px; /* badges */
+
+  /* Rythme d'espacement : 32/24/20/16/12/8/4 */
+  --tf-space-page: 32px;
+
+  /* Mouvement — bref et intentionnel */
+  --tf-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --tf-duration-fast: 120ms;
+  --tf-duration-ui: 180ms;
+  --tf-duration-toast: 350ms;
+
+  /* Typographie — pile système, mono pour les IDs ticket */
+  --tf-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --tf-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* Couches (z-index) */
+  --tf-z-header: 500;
+  --tf-z-modal-backdrop: 800;
+  --tf-z-modal: 810;
+  --tf-z-toast: 1000;
+}

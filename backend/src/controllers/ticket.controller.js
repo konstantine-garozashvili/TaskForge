@@ -1,4 +1,4 @@
-import * as ticketModel from "../models/ticket.model.js";
+import * as ticketModel from '../models/ticket.model.js';
 
 export const getAllTickets = async (req, res) => {
   try {
@@ -20,7 +20,10 @@ export const getTicketById = async (req, res) => {
 
 export const createTicket = async (req, res) => {
   try {
-    const newTicket = await ticketModel.createTicket(req.body);
+    const newTicket = await ticketModel.createTicket({
+      ...req.body,
+      creatorId: req.user.id,
+    });
     res.status(201).json(newTicket);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -47,10 +50,7 @@ export const deleteTicket = async (req, res) => {
 
 export const changeStatus = async (req, res) => {
   try {
-    const updatedTicket = await ticketModel.changeTicketStatus(
-      req.params.id,
-      req.body.status
-    );
+    const updatedTicket = await ticketModel.changeTicketStatus(req.params.id, req.body.status);
 
     res.status(200).json(updatedTicket);
   } catch (error) {
@@ -60,10 +60,7 @@ export const changeStatus = async (req, res) => {
 
 export const assignTicket = async (req, res) => {
   try {
-    const updatedTicket = await ticketModel.assignTicket(
-      req.params.id,
-      req.body.assigneeId
-    );
+    const updatedTicket = await ticketModel.assignTicket(req.params.id, req.body.assigneeId);
 
     res.status(200).json(updatedTicket);
   } catch (error) {
