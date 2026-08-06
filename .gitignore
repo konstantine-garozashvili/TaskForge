@@ -62,3 +62,7 @@ temp/
 *.local
 .vercel
 .netlify
+
+.agents/
+.claude/
+.windsurf/

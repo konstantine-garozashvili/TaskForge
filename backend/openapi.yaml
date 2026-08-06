@@ -301,6 +301,147 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+# api tickets
+  /api/tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Récupérer tous les tickets
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste des tickets
+
+    post:
+      tags:
+        - Tickets
+      summary: Créer un ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreate'
+      responses:
+        "201":
+          description: Ticket créé
+
+  /api/tickets/{id}:
+    get:
+      tags:
+        - Tickets
+      summary: Récupérer un ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticket trouvé
+        "404":
+          description: Ticket introuvable
+
+    put:
+      tags:
+        - Tickets
+      summary: Modifier un ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdate'
+      responses:
+        "200":
+          description: Ticket modifié
+        "404":
+          description: Ticket introuvable
+
+    delete:
+      tags:
+        - Tickets
+      summary: Supprimer un ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Ticket supprimé
+
+  /api/tickets/{id}/status:
+    patch:
+      tags:
+        - Tickets
+      summary: Modifier le statut
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: en_cours
+      responses:
+        "200":
+          description: Statut modifié
+
+  /api/tickets/{id}/assign:
+    patch:
+      tags:
+        - Tickets
+      summary: Assigner un technicien
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assigneeId:
+                  type: integer
+                  example: 2
+      responses:
+        "200":
+          description: Ticket assigné
+
 components:
   securitySchemes:
     bearerAuth:
@@ -417,3 +558,122 @@ components:
             api: { type: string, enum: [up], example: up }
             database: { type: string, enum: [up, down], example: up }
         timestamp: { type: string, format: date-time }
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum:
+            - basse
+            - moyenne
+            - haute
+            - critique
+        status:
+          type: string
+          enum:
+            - ouvert
+            - en_cours
+            - resolu
+            - ferme
+        creatorId:
+          type: integer
+        assigneeId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    TicketCreate:
+      type: object
+      required:
+        - title
+        - description
+        - priority
+        - creatorId
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum:
+            - basse
+            - moyenne
+            - haute
+            - critique
+        creatorId:
+          type: integer
+        assigneeId:
+          type: integer
+          nullable: true
+          description: "Optionnel : permet d'assigner directement le ticket à un technicien."
+
+    TicketUpdate:
+      type: object
+
+      required:
+        - title
+        - description
+        - priority
+
+      properties:
+        title:
+          type: string
+          example: Outlook ne répond plus
+
+        description:
+          type: string
+          example: Le problème est toujours présent
+
+        priority:
+          type: string
+          enum:
+            - basse
+            - moyenne
+            - haute
+            - critique
+
+    TicketAssign:
+      type: object
+
+      required:
+        - assigneeId
+
+      properties:
+        assigneeId:
+          type: integer
+          example: 2
+
+
+    TicketStatus:
+      type: object
+
+      required:
+        - status
+
+      properties:
+        status:
+          type: string
+          enum:
+            - ouvert
+            - en_cours
+            - resolu
+            - ferme
+          example: resolu
