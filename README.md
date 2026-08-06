@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-Le serveur de dev Vite proxifie automatiquement les appels `/api` vers le backend (`http://localhost:5000`).
+Le serveur de dev Vite proxifie automatiquement les appels `/api` vers la stack Docker locale via Traefik (`http://localhost`, port 80). Pour cibler un backend lancé à la main : `VITE_BACKEND_URL=http://localhost:5000 npm run dev`.
 
 ### Scripts disponibles
 
