@@ -20,6 +20,10 @@ fi
 cd "$APP_DIR"
 git fetch origin --tags --quiet
 git checkout --quiet "$REF"
+# Si REF est une branche, suivre origin (sinon un tag est figé par définition)
+if git show-ref --verify --quiet "refs/remotes/origin/$REF"; then
+  git reset --hard --quiet "origin/$REF"
+fi
 
 # .env régénéré à chaque déploiement (jamais dans le repo)
 cat > .env <<EOF
