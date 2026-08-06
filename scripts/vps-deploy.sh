@@ -26,6 +26,8 @@ cat > .env <<EOF
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 JWT_SECRET=${JWT_SECRET}
 CLIENT_URL=${CLIENT_URL:-https://taskforge.konstantine.fr}
+GRAFANA_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD manquant}
 EOF
 
 docker compose -f docker-compose.vps.yml up -d --build

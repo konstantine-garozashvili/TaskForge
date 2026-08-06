@@ -49,13 +49,14 @@ jobs:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
           mkdir -p ~/.ssh
           echo "$VPS_SSH_KEY" > ~/.ssh/vps_key
           chmod 600 ~/.ssh/vps_key
           ssh-keyscan -H 167.235.72.190 >> ~/.ssh/known_hosts 2>/dev/null
           ssh -i ~/.ssh/vps_key root@167.235.72.190 \
-            "POSTGRES_PASSWORD='$POSTGRES_PASSWORD' JWT_SECRET='$JWT_SECRET' bash /opt/taskforge/scripts/vps-deploy.sh '$REF'"
+            "POSTGRES_PASSWORD='$POSTGRES_PASSWORD' JWT_SECRET='$JWT_SECRET' GRAFANA_ADMIN_PASSWORD='$GRAFANA_ADMIN_PASSWORD' bash /opt/taskforge/scripts/vps-deploy.sh '$REF'"
 
       - name: Verify public site
         run: |
