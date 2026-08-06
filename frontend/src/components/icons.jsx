@@ -72,3 +72,21 @@ export const IconInfo = (props) => (
     <path d="M12 11v5M12 7.5V8" />
   </Icon>
 );
+
+export const IconPencil = (props) => (
+  <Icon {...props}>
+    <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
+  </Icon>
+);
+
+export const IconTrash = (props) => (
+  <Icon {...props}>
+    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+  </Icon>
+);
+
+export const IconClose = (props) => (
+  <Icon {...props}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </Icon>
+);

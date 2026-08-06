@@ -82,6 +82,27 @@
   flex-shrink: 0;
 }
 
+.tf-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px;
+  margin: -6px;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--tf-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--tf-duration-fast) ease;
+}
+
+.tf-profile-link:hover {
+  background: var(--tf-fill-1);
+}
+
 .tf-user-meta {
   display: flex;
   flex-direction: column;

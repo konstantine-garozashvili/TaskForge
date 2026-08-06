@@ -8,6 +8,7 @@ import Register from './pages/Register.jsx';
 import Tickets from './pages/Tickets.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Users from './pages/Users.jsx';
+import Profile from './pages/Profile.jsx';
 
 /**
  * Routage TaskForge (ticket #5).
@@ -32,6 +33,7 @@ function App() {
               <Route path="/" element={<Navigate to="/tickets" replace />} />
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profil" element={<Profile />} />
               <Route
                 path="/utilisateurs"
                 element={

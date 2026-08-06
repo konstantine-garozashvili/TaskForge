@@ -1,0 +1,231 @@
+/* Gestion des utilisateurs — table sobre + modales (ticket #4). */
+
+.tf-users-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- Table ---------- */
+
+.tf-table-card {
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border-light);
+  border-radius: var(--tf-radius-lg);
+  overflow: hidden;
+}
+
+.tf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tf-table th {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tf-text-3);
+  text-align: left;
+  border-bottom: 1px solid var(--tf-border-light);
+}
+
+.tf-table td {
+  padding: 12px 16px;
+  color: var(--tf-text-1);
+  border-bottom: 1px solid var(--tf-border-light);
+}
+
+.tf-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tf-table tbody tr {
+  transition: background-color var(--tf-duration-fast) ease;
+}
+
+.tf-table tbody tr:hover {
+  background: var(--tf-fill-1);
+}
+
+.tf-table-name {
+  font-weight: 500;
+}
+
+.tf-you-badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: var(--tf-radius-xs);
+  font-size: 12px;
+  font-weight: 400;
+  background: var(--tf-blue-soft);
+  color: var(--tf-blue);
+}
+
+.tf-table-date {
+  color: var(--tf-text-3);
+}
+
+.tf-table-actions-head {
+  width: 96px;
+}
+
+.tf-table-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.tf-table-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--tf-text-3);
+}
+
+.tf-icon-button-danger:hover:not(:disabled) {
+  color: var(--tf-red);
+  background: var(--tf-red-soft);
+}
+
+.tf-icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Skeleton de chargement */
+
+.tf-table-skeleton td {
+  padding: 16px;
+}
+
+.tf-skeleton-bar {
+  display: block;
+  height: 14px;
+  border-radius: var(--tf-radius-xs);
+  background: var(--tf-fill-2);
+  animation: tf-pulse 1.4s ease-in-out infinite;
+}
+
+/* ---------- Modales ---------- */
+
+.tf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--tf-z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.32);
+  animation: tf-fade-in var(--tf-duration-fast) ease;
+}
+
+@keyframes tf-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.tf-modal {
+  z-index: var(--tf-z-modal);
+  width: 100%;
+  max-width: 440px;
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border-light);
+  border-radius: var(--tf-radius-lg);
+  padding: 24px;
+  animation: tf-card-in var(--tf-duration-ui) var(--tf-ease-out);
+}
+
+.tf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tf-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tf-text-1);
+}
+
+.tf-modal-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tf-text-2);
+  margin-bottom: 20px;
+}
+
+.tf-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tf-select {
+  appearance: none;
+  cursor: pointer;
+}
+
+/* ---------- Boutons secondaire / danger ---------- */
+
+.tf-button-secondary,
+.tf-button-danger {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: var(--tf-radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--tf-duration-fast) ease,
+    transform var(--tf-duration-fast) ease;
+}
+
+.tf-button-secondary {
+  color: var(--tf-text-1);
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border);
+}
+
+.tf-button-secondary:hover {
+  background: var(--tf-fill-1);
+}
+
+.tf-button-danger {
+  color: #fff;
+  background: var(--tf-red);
+  border: none;
+}
+
+.tf-button-danger:hover {
+  background: #e62e3f;
+}
+
+.tf-button-secondary:active,
+.tf-button-danger:active {
+  transform: scale(0.97);
+}
+
+.tf-button-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.tf-modal .tf-button-primary {
+  height: 36px;
+  padding: 0 14px;
+  margin-top: 0;
+}
+
+.tf-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}

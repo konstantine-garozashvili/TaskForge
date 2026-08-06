@@ -167,6 +167,52 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
+    put:
+      tags: [Auth]
+      summary: Mettre à jour son propre profil
+      description: |
+        Modification en libre-service du nom, de l'email et/ou du mot de passe.
+        Le changement de rôle est réservé aux admins via `PUT /api/users/:id`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: Ada Lovelace }
+                email: { type: string, format: email, example: ada@forgeworks.fr }
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: nouveau-mot-de-passe
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Aucun champ à modifier ou validation échouée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Token absent, malformé ou expiré
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Email déjà utilisé par un autre compte
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /api/roles:
     get:
