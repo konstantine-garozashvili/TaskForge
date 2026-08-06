@@ -14,6 +14,14 @@ scrape_configs:
         labels:
           app: taskforge
 
+  # Traefik VPS (routage Docker + load balancing derrière le Nginx hôte)
+  - job_name: traefik
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["traefik:8082"]
+        labels:
+          app: traefik
+
   # Sondes HTTP externes — ajouter un projet = ajouter une URL ici
   - job_name: vps-sites
     metrics_path: /probe
