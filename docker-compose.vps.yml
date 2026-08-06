@@ -1,0 +1,71 @@
+# TaskForge — stack VPS (taskforge.konstantine.fr)
+# Différences avec docker-compose.prod.yml (démo locale) :
+# - pas de Traefik/Prometheus/Grafana : le Nginx HÔTE fait TLS + routage
+# - ports publiés sur 127.0.0.1 uniquement (Nginx hôte → containers)
+# - base dédiée avec son propre volume (db_vps_data)
+#
+# Déploiement : git tag v* + push → GitHub Actions (deploy-vps.yml) fait tout.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taskforge-vps-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taskforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: taskforge
+    volumes:
+      - db_vps_data:/var/lib/postgresql/data
+      # Schéma Merise (MPD) exécuté une seule fois au 1er démarrage
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskforge -d taskforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Aucun port publié : joignable uniquement par le backend (réseau interne)
+
+  backend:
+    build: ./backend
+    container_name: taskforge-vps-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgres://taskforge:${POSTGRES_PASSWORD}@db:5432/taskforge
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+      CLIENT_URL: ${CLIENT_URL:-https://taskforge.konstantine.fr}
+    ports:
+      - "127.0.0.1:5001:5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Même origine : le navigateur appelle /api sur taskforge.konstantine.fr,
+        # le Nginx hôte le proxifie vers le backend.
+        VITE_API_URL: /api
+    container_name: taskforge-vps-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  db_vps_data:
